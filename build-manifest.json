@@ -1,0 +1,247 @@
+{
+  "schema": "fos-public-static-allowlist-v1",
+  "purpose": "Local video playback and imported tracking visualization/annotations; no automatic inference/training",
+  "public_data_included": false,
+  "video_upload": false,
+  "backend_required_for_inference": true,
+  "allowlist": [
+    ".nojekyll",
+    "analysis.js",
+    "analyst-continuity.js",
+    "analyst-pages.css",
+    "analyst.css",
+    "analyst.html",
+    "analyst.js",
+    "ball-display.js",
+    "build-manifest.json",
+    "camera-reconstruction.js",
+    "dashboard-core.js",
+    "display.js",
+    "fos-ui.css",
+    "index.html",
+    "lines.js",
+    "marker-colors.js",
+    "motion-model.js",
+    "pages-app.js",
+    "pages-core.js",
+    "pages.css",
+    "prediction.js",
+    "prediction_ml.js",
+    "slots.js",
+    "tactical-annotation-ui.js",
+    "tactical-annotations.css",
+    "tactical-annotations.js",
+    "tactical-continuity.js"
+  ],
+  "excluded": [
+    "fos_workspace/**",
+    "analyst-work/**",
+    "work/**",
+    "outputs/**",
+    ".venv*/**",
+    ".git/**",
+    "notebooks/**",
+    "models/**",
+    "fixtures/**",
+    "secrets",
+    "runtime configs",
+    "local paths",
+    "private videos and results"
+  ],
+  "sources": {
+    "adapter": {
+      "path": "tools/pages_site/analyst-pages-adapter.js",
+      "sha256": "30012a1b95686af66dcba3b52535f83766825c171e736478594b6604f144c764"
+    }
+  },
+  "files": {
+    ".nojekyll": {
+      "source": null,
+      "transformation": "generated marker",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "analysis.js": {
+      "source": "analysis.js",
+      "source_sha256": "894767b7a69cdc1003c611aab39d2fce799da58a1ac0c8458099a25105e76e80",
+      "transformation": "byte-for-byte copy",
+      "bytes": 44255,
+      "sha256": "894767b7a69cdc1003c611aab39d2fce799da58a1ac0c8458099a25105e76e80"
+    },
+    "analyst-continuity.js": {
+      "source": "analyst-continuity.js",
+      "source_sha256": "904066d52ac323032105cbce30de7b3f6fac9cffe6b0fb71841c8f7b4c23b2b5",
+      "transformation": "remove server result loader; keep local continuity math",
+      "bytes": 3674,
+      "sha256": "e27ee7cb8382482950014981be6e7f26d6a24842e790b64bf7fe50b713181160"
+    },
+    "analyst-pages.css": {
+      "source": "tools/pages_site/analyst-pages.css",
+      "source_sha256": "8014314e7416c056e58e92cd1a5d35a95294a8c7feb7c08c4429bf10ecf018ca",
+      "transformation": "byte-for-byte copy",
+      "bytes": 701,
+      "sha256": "8014314e7416c056e58e92cd1a5d35a95294a8c7feb7c08c4429bf10ecf018ca"
+    },
+    "analyst.css": {
+      "source": "analyst.css",
+      "source_sha256": "99ddd1bb68923e492a9320928cdefb103b63ab508dc21c52e0ca4669f1c3cf6b",
+      "transformation": "byte-for-byte copy",
+      "bytes": 29172,
+      "sha256": "99ddd1bb68923e492a9320928cdefb103b63ab508dc21c52e0ca4669f1c3cf6b"
+    },
+    "analyst.html": {
+      "source": "analyst.html",
+      "source_sha256": "8b311b1ad8c37f7d6e7d2cdab01a500744abbc750b1bbfdeb1efa079de205472",
+      "transformation": "CSP/connect-src none; static notices; local navigation; extra stylesheet",
+      "bytes": 31910,
+      "sha256": "dbb3d5ae8f8fbd4d55d8e8a44066e2350fdbb2048134fe11a2a90087e5ee4a7b"
+    },
+    "analyst.js": {
+      "source": "analyst.js",
+      "source_sha256": "a925cd500e10473bb753efbb0604293b432687da734f60fcf0112019dca27ef6",
+      "transformation": "deny network; remove server discovery/upload/model loading; append local File adapter",
+      "bytes": 146971,
+      "sha256": "1814da82ab15287edeb10d282ae25cca4c408e1cabc563064074d826dbdea7d5"
+    },
+    "ball-display.js": {
+      "source": "ball-display.js",
+      "source_sha256": "355a6e5eec1b15b24ab3c3e4a04decfd8bc472454dc0dcc0fd43add04a6ef471",
+      "transformation": "byte-for-byte copy",
+      "bytes": 3068,
+      "sha256": "355a6e5eec1b15b24ab3c3e4a04decfd8bc472454dc0dcc0fd43add04a6ef471"
+    },
+    "camera-reconstruction.js": {
+      "source": "camera-reconstruction.js",
+      "source_sha256": "a178ee8e1f9944a46d74f2c850474bfcf07e03f8db26e1bb30330f8d4b82f5ab",
+      "transformation": "byte-for-byte copy",
+      "bytes": 41875,
+      "sha256": "a178ee8e1f9944a46d74f2c850474bfcf07e03f8db26e1bb30330f8d4b82f5ab"
+    },
+    "dashboard-core.js": {
+      "source": "dashboard-core.js",
+      "source_sha256": "ce3efc75ef151c54807f577c8942e7a416236511c8c0f389a5e297481a03f73d",
+      "transformation": "byte-for-byte copy",
+      "bytes": 13425,
+      "sha256": "ce3efc75ef151c54807f577c8942e7a416236511c8c0f389a5e297481a03f73d"
+    },
+    "display.js": {
+      "source": "display.js",
+      "source_sha256": "d3b0d7578850bd785a970376a5539cb9c38a5a9d8a143eae929d0144cafbbef0",
+      "transformation": "byte-for-byte copy",
+      "bytes": 11565,
+      "sha256": "d3b0d7578850bd785a970376a5539cb9c38a5a9d8a143eae929d0144cafbbef0"
+    },
+    "fos-ui.css": {
+      "source": "fos-ui.css",
+      "source_sha256": "85bfa89921c7f3ac8a3a29104c07899b18dd1bad52b53d52a3931eb382ebc06d",
+      "transformation": "byte-for-byte copy",
+      "bytes": 12760,
+      "sha256": "85bfa89921c7f3ac8a3a29104c07899b18dd1bad52b53d52a3931eb382ebc06d"
+    },
+    "index.html": {
+      "source": "tools/pages_site/index.html",
+      "source_sha256": "9ab737d4bffe3920c3a8e9b43c585100ba35f7428b468ed29867802a13340f5f",
+      "transformation": "byte-for-byte copy",
+      "bytes": 4031,
+      "sha256": "9ab737d4bffe3920c3a8e9b43c585100ba35f7428b468ed29867802a13340f5f"
+    },
+    "lines.js": {
+      "source": "lines.js",
+      "source_sha256": "d240a455eb4aebc80c016149ad3eabbda81447e49069d2860756d62b6b6a0284",
+      "transformation": "byte-for-byte copy",
+      "bytes": 5206,
+      "sha256": "d240a455eb4aebc80c016149ad3eabbda81447e49069d2860756d62b6b6a0284"
+    },
+    "marker-colors.js": {
+      "source": "marker-colors.js",
+      "source_sha256": "743df5311879645b1622adb8e8ad112be316f6a41668ce567d1a41b3d8b32925",
+      "transformation": "byte-for-byte copy",
+      "bytes": 680,
+      "sha256": "743df5311879645b1622adb8e8ad112be316f6a41668ce567d1a41b3d8b32925"
+    },
+    "motion-model.js": {
+      "source": "motion-model.js",
+      "source_sha256": "1594c3b109fe32e37123acca0f80774d09c337efe01e198aa08947574ad7a6b2",
+      "transformation": "byte-for-byte copy",
+      "bytes": 8920,
+      "sha256": "1594c3b109fe32e37123acca0f80774d09c337efe01e198aa08947574ad7a6b2"
+    },
+    "pages-app.js": {
+      "source": "tools/pages_site/pages-app.js",
+      "source_sha256": "79af96883e5a90f32cecb6827059bee42c9260d53eda83a9a512bc83b28b2a66",
+      "transformation": "byte-for-byte copy",
+      "bytes": 3637,
+      "sha256": "79af96883e5a90f32cecb6827059bee42c9260d53eda83a9a512bc83b28b2a66"
+    },
+    "pages-core.js": {
+      "source": "tools/pages_site/pages-core.js",
+      "source_sha256": "8be36bb769def781bfbf7b63568973887ad13aaabbcdc81d61dbf9c67f5c78b9",
+      "transformation": "byte-for-byte copy",
+      "bytes": 1494,
+      "sha256": "8be36bb769def781bfbf7b63568973887ad13aaabbcdc81d61dbf9c67f5c78b9"
+    },
+    "pages.css": {
+      "source": "tools/pages_site/pages.css",
+      "source_sha256": "64fde44850f56bf4914366690cce3b4b18479453b079a158aeb8f1c5af92d1b1",
+      "transformation": "byte-for-byte copy",
+      "bytes": 3980,
+      "sha256": "64fde44850f56bf4914366690cce3b4b18479453b079a158aeb8f1c5af92d1b1"
+    },
+    "prediction.js": {
+      "source": "prediction.js",
+      "source_sha256": "72f1ac5b2b4a12f2be026efd36cf918a0f9a99fb4cc6cb1ef7fbaf2f9a32005c",
+      "transformation": "byte-for-byte copy",
+      "bytes": 12584,
+      "sha256": "72f1ac5b2b4a12f2be026efd36cf918a0f9a99fb4cc6cb1ef7fbaf2f9a32005c"
+    },
+    "prediction_ml.js": {
+      "source": "prediction_ml.js",
+      "source_sha256": "a742736a349dfc4e5dac88b7bc6fccf80b83f8c66b963db7e9a5219dd02937a0",
+      "transformation": "byte-for-byte copy",
+      "bytes": 7592,
+      "sha256": "a742736a349dfc4e5dac88b7bc6fccf80b83f8c66b963db7e9a5219dd02937a0"
+    },
+    "slots.js": {
+      "source": "slots.js",
+      "source_sha256": "2387d2e559cbb35d3f48156f87f7b066c6f2ae0617d6a64d23a62f81158b8d33",
+      "transformation": "byte-for-byte copy",
+      "bytes": 5219,
+      "sha256": "2387d2e559cbb35d3f48156f87f7b066c6f2ae0617d6a64d23a62f81158b8d33"
+    },
+    "tactical-annotation-ui.js": {
+      "source": "tactical-annotation-ui.js",
+      "source_sha256": "6314674507433568dcbb480881010d35193742c60f97b074fe7289aee304f99c",
+      "transformation": "static calibration help link; shared annotation behavior unchanged",
+      "bytes": 14760,
+      "sha256": "83b8d05cbde90b3b22f5a4c6fdaa039f342975ea697bed4600bc0d494fcb6570"
+    },
+    "tactical-annotations.css": {
+      "source": "tactical-annotations.css",
+      "source_sha256": "fc63a6959bfd9a2b084d8d978aa5515220eaee4ced5c326f225f4cf3e3049ed4",
+      "transformation": "byte-for-byte copy",
+      "bytes": 2483,
+      "sha256": "fc63a6959bfd9a2b084d8d978aa5515220eaee4ced5c326f225f4cf3e3049ed4"
+    },
+    "tactical-annotations.js": {
+      "source": "tactical-annotations.js",
+      "source_sha256": "9134e311883d5e13656abf8d36c3d47b0c4348a48ad4366881342bd838e19fa3",
+      "transformation": "byte-for-byte copy",
+      "bytes": 12060,
+      "sha256": "9134e311883d5e13656abf8d36c3d47b0c4348a48ad4366881342bd838e19fa3"
+    },
+    "tactical-continuity.js": {
+      "source": "tactical-continuity.js",
+      "source_sha256": "411b015bed40bbd2561e9a75350ac4a7bf52fda1bba039b6c286696bbbabbd7d",
+      "transformation": "byte-for-byte copy",
+      "bytes": 31649,
+      "sha256": "411b015bed40bbd2561e9a75350ac4a7bf52fda1bba039b6c286696bbbabbd7d"
+    }
+  },
+  "limitations": [
+    "GitHub Pages does not run Python/GPU inference",
+    "New videos require external tracking/calibration for2D",
+    "TV/tactical selection is source metadata, not a camera transformation",
+    "LocalStorage/files are not synchronized between devices",
+    "Imported estimates are not confirmed identities or detections"
+  ]
+}

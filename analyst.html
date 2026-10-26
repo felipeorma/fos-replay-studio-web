@@ -1,0 +1,285 @@
+<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'none'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><title>FOS · Analyst</title><link rel="stylesheet" href="fos-ui.css"><link rel="stylesheet" href="analyst.css"><link rel="stylesheet" href="tactical-annotations.css"><link rel="stylesheet" href="analyst-pages.css"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e43b47'/%3E%3Cpath d='M10 24V8h13M10 16h10' fill='none' stroke='white' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"></head><body class="analyst" data-state="empty">
+<p class="static-note"><a href="index.html" target="_top">← Video y tramo</a> · Visor local de archivos: sin subida, detección ni entrenamiento. Para el mapa2D importa tracking; la calidad depende de su calibración.</p><header class="toolbar">
+  <div class="brand"><svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#e43b47"/><path d="M10 24V8h13M10 16h10" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>FOS</b> Analyst</span></div>
+  <div class="view-switch" role="group" aria-label="Vista"><button data-view="pitch">Cancha</button><button data-view="video">Video</button><button data-view="both" class="active">Ambos</button></div>
+  <div class="head-actions">
+    <button id="panelToggle" class="icon-btn" type="button" aria-pressed="true" title="Mostrar u ocultar el panel de la derecha para dar más espacio a las dos pantallas" aria-label="Mostrar u ocultar el panel"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M15 5v14"/></svg></button>
+    <details class="menu fos-nav"><summary class="btn">Herramientas <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="menu-pop"><a href="analyst.html" aria-current="page">Analizar un partido<small>FOS Analyst</small></a><a href="index.html">Editor de jugadas<small>Replay Studio</small></a><a href="index.html">Explicador<small>Video explicativo</small></a></div></details>
+    <details class="menu"><summary class="btn">Abrir <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="menu-pop" role="menu">
+        <button id="openVideo" role="menuitem">Video…</button>
+        <button id="openData" role="menuitem" title="Tracking JSON o CSV; para continuidad selecciona también reconstruction.json y continuity.json de la misma revisión">Datos de tracking y continuidad…</button>
+        <button id="openH" role="menuitem" title="Matriz de la cámara (JSON del tracker)">Cámara (JSON)…</button>
+        <button id="loadProject" role="menuitem">Proyecto…</button>
+        <hr>
+        <button id="realClip" role="menuitem" title="Un clip real de transmisión ya analizado (Aravena contra Portugal): 10 jugadores, sin balón">Clip real de ejemplo</button>
+        <button id="calib" role="menuitem" title="Marca 4 puntos de la cancha en el video para dibujar sobre él">Calibrar el video a mano</button>
+      </div>
+    </details>
+    <details class="menu"><summary class="btn primary">Exportar <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="menu-pop" role="menu">
+        <button id="exportCsv" role="menuitem" title="El x e y (en metros) de cada jugador y del balón en cada fotograma, en un CSV">Coordenadas (CSV)</button>
+        <button id="exportMatchCsv" role="menuitem" title="El x e y de todos los jugadores de TODO el partido analizado (por tramos), en un CSV">CSV de todo el partido</button>
+        <button id="exportSlotsCsv" role="menuitem" title="Los 11 de cada equipo en todo el partido: dónde está cada casilla, si se ve o está estimada y el radio de duda (5 por segundo)">CSV de los 11 de cada equipo</button>
+        <button id="exportJson" role="menuitem" title="x e y de cada jugador en cada fotograma, en JSON">Coordenadas (JSON)</button>
+        <button id="snapshot" role="menuitem" title="Imagen de la cancha con todo lo dibujado">Imagen de la cancha</button>
+        <hr>
+        <button id="saveProject" role="menuitem">Guardar proyecto</button>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main class="an-main">
+  <section class="an-center" id="center">
+    <div class="stage-bar"><span id="liveBadge" class="badge" hidden>EN VIVO</span><span id="stageTitle" class="stage-title"></span><span id="hover" class="muted small"></span></div>
+    <p id="modelReviewNote" class="model-review-note" role="status" aria-live="polite" hidden></p>
+
+    <div class="an-stage" id="stage">
+      <div class="hero" id="empty">
+        <div class="hero-card">
+          <h1>Analiza un partido</h1>
+          <p>Abre un video local y datos de tracking para dibujar jugadores en2D. Esta web no ejecuta análisis automático.</p>
+          <div class="drop" id="drop"><span class="drop-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0l-4 4m4-4l4 4M5 14v4a2 2 0 002 2h10a2 2 0 002-2v-4"/></svg></span><b>Suelta aquí el video</b><span class="muted">o elígelo en tu computador</span></div>
+          <div class="hero-actions"><button class="primary big" id="emptyVideo">Elegir un video</button><button class="big ghost" id="emptyDemo">Ver un clip real de ejemplo</button></div>
+          <p class="hero-foot muted small">¿Ya tienes los datos de un tracker? <button class="link" id="emptyData">Ábrelos aquí</button>.</p>
+        </div>
+      </div>
+
+      <div class="pane" id="pitchPane" hidden><div class="pane-cap"><b>Cancha 2D</b><span>posiciones en metros</span></div><canvas id="pitch" aria-label="Cancha táctica con los jugadores y las capas de análisis"></canvas><p id="continuityNote" class="muted small" aria-live="polite" hidden></p><div class="pane-note" id="staleNote" hidden>Este tramo todavía no está analizado</div></div>
+
+      <div class="pane" id="videoPane" hidden>
+        <div class="pane-cap"><b>Video original</b><span>con las líneas de la cancha</span></div>
+        <div class="video-box"><video id="video" muted playsinline controls></video><canvas id="vover"></canvas>
+          <div class="cta" id="cta" hidden>
+            <div class="cta-card">
+              <div class="cta-idle" id="ctaIdle">
+                <h2>Listo para analizar</h2>
+                <p class="muted">Detecta las líneas de la cancha, sigue a la cámara cuando se mueve y ubica a cada jugador.</p>
+                <div class="cta-actions"><button class="primary big" id="ctaAnalyze">Detectar cancha y jugadores</button></div>
+                <p class="muted small cta-range">Tramo <b id="ctaRange"></b> <button class="link" id="ctaRangeEdit" type="button">Cambiar</button> <span aria-hidden="true">·</span> <button class="link" id="ctaSettings" type="button">Ajustes</button></p>
+              </div>
+              <div class="cta-busy" id="ctaBusy" hidden>
+                <h2 id="ctaStep">Analizando…</h2>
+                <div class="progress"><i id="ctaBar" style="width:0"></i></div>
+                <p class="muted small" id="ctaMsg"></p>
+                <button class="ghost" id="ctaCancel">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="muted small" id="videoInfo">Abre un video y su cámara (o calíbralo) para dibujar sobre él.</p>
+      </div>
+    </div>
+
+    <div class="dock" id="dock" hidden>
+      <div class="dock-main">
+        <button id="prev" aria-label="Cuadro anterior" title="Cuadro anterior (←)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button id="play" class="play" aria-label="Reproducir" title="Reproducir o pausar (espacio)"><svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+        <button id="next" aria-label="Cuadro siguiente" title="Cuadro siguiente (→)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+        <output id="clock">0:00.0</output><span id="matchMinute" class="muted match-minute" hidden></span>
+        <div class="scrub"><input type="range" id="timeline" min="0" max="0" value="0" step="1" aria-label="Cuadro"><canvas id="markers" height="26"></canvas><div id="matchBar" class="match-bar" role="slider" aria-label="Todo el partido" tabindex="0" hidden></div></div>
+        <span id="clockTotal" class="muted total"></span>
+        <label class="inline">Velocidad<select id="speed"><option value="0.25">0,25×</option><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+        <details class="menu more"><summary class="btn icon" aria-label="Más controles"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></summary>
+          <div class="menu-pop up">
+            <label class="check"><input type="checkbox" id="live"> En vivo</label>
+            <label>Desfase entre el video y los datos (s)<input type="number" id="vOffset" value="0" step="0.1" aria-label="Desfase del video en segundos"></label>
+          </div>
+        </details>
+      </div>
+    </div>
+    <div class="stage-foot"><span id="status" role="status" aria-live="polite">Listo</span><span class="keys">Espacio reproducir · ← → cuadro</span></div>
+  </section>
+
+  <aside class="an-inspector" id="inspector" aria-label="Inspector">
+    <div class="tabs" role="tablist" aria-label="Secciones">
+      <button role="tab" data-tab="analisis" aria-selected="true">Análisis</button>
+      <button role="tab" data-tab="capas" aria-selected="false">Capas</button>
+      <button role="tab" data-tab="equipos" aria-selected="false">Equipos</button>
+      <button role="tab" data-tab="jugadores" aria-selected="false">Jugadores</button>
+      <button role="tab" data-tab="dibujo" aria-selected="false">Dibujo</button>
+    </div>
+
+    <section class="tab-panel" role="tabpanel" data-panel="analisis">
+      <div class="card file-card">
+        <div class="file-line"><span class="file-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg></span><div class="file-text"><b id="trkName">Ningún video</b><span class="muted small" id="trkSub">Elige un video para empezar</span></div><button id="trkPick" class="mini">Elegir</button></div>
+        <p class="muted small" id="trkEnv">Comprobando el entorno del tracker…</p>
+      </div>
+      <div class="card range-card" id="rangeCard" hidden>
+        <div class="step-h">Tramo de reproducción</div>
+        <div class="pair">
+          <div class="range-col"><label for="trkFrom"><span>Desde <span class="muted small">min:seg</span></span><input id="trkFrom" value="0:00" inputmode="decimal" autocomplete="off" spellcheck="false"></label><button type="button" id="fromHere" class="mini ghost" title="Usar el punto donde está el video ahora">Desde aquí</button></div>
+          <div class="range-col"><label for="trkTo"><span>Hasta <span class="muted small">min:seg</span></span><input id="trkTo" value="0:20" inputmode="decimal" autocomplete="off" spellcheck="false"></label><button type="button" id="toHere" class="mini ghost" title="Usar el punto donde está el video ahora">Hasta aquí</button></div>
+        </div>
+        <p class="muted small" id="rangeNote"></p>
+      </div>
+      <button class="primary big wide" id="trkAll" title="Detecta las líneas de la cancha (siguiéndolas si la cámara se mueve) y después a los jugadores, y deja listas las capas sobre la cancha y el video">Detectar cancha y jugadores</button>
+      <div class="progress" id="trkBarWrap" hidden><i id="trkBar" style="width:0"></i></div>
+      <p class="muted small" id="trkMsg"></p>
+      <p class="small" id="trkQuality" hidden></p>
+      <div class="btn-row"><button id="trkUseAnyway" class="mini" hidden title="La calibración automática salió mala. Esto permite analizar con ella igual (se ve en las líneas verdes sobre el video si calza)">Usar igual</button><button id="trkCancel" class="ghost" hidden>Cancelar</button></div>
+      <p class="small calib-line"><span id="trkCalibState" class="muted">sin calibrar</span> <button id="trkFlip" class="mini ghost" hidden title="Si el modelo puso los lados de la cancha al revés (lo que llama izquierda es la derecha y lo de arriba está abajo)">Girar la cancha 180°</button></p>
+
+      <div class="card" id="matchCard">
+        <div class="step-h">Todo el partido</div>
+        <p class="muted small" id="matchText">Analiza el partido entero, por tramos de 5 minutos, para verlo en cualquier momento y descargar las coordenadas de todos los jugadores. Corre en segundo plano y se puede dejar a medias.</p>
+        <div class="progress" id="matchProg" hidden><i id="matchProgBar" style="width:0"></i></div>
+        <div class="chunk-strip" id="chunkStrip" hidden></div>
+        <p class="muted small" id="matchInfo"></p>
+        <div class="btn-row"><button id="matchStart" class="mini primary" disabled>Analizar todo el partido</button><button id="matchStop" class="mini" hidden>Detener</button><button id="matchCsv" class="mini" disabled>Descargar CSV de todo el partido</button></div>
+        <label class="small csv-rate">Cuadros del CSV <select id="matchCsvHz"><option value="">Todos (15 por segundo)</option><option value="5">5 por segundo (cabe en Excel)</option><option value="1">1 por segundo</option></select></label>
+        <div class="goto" id="gotoBox" hidden><label>Ir al minuto del partido <input type="number" id="gotoMin" min="0" max="140" value="60"></label><button id="gotoGo" class="mini">Ir</button></div>
+      </div>
+
+      <details class="disclosure">
+        <summary>Ajustes del análisis</summary>
+        <div class="disclosure-body">
+          <div class="pair"><label>Cuadros<select id="trkStride"><option value="1">Todos</option><option value="2" selected>1 de cada 2</option><option value="3">1 de cada 3</option></select></label><label>Procesador<select id="trkDevice"><option value="auto" selected>Automático (GPU)</option><option value="cpu">CPU</option></select></label></div>
+          <label class="check"><input type="checkbox" id="trkBall" checked> Seguir el balón (para los pases)</label>
+          <label>…o la ruta del video en este computador <span class="muted small">(no copia archivos grandes)</span><input id="trkPath" placeholder="No disponible en esta web" spellcheck="false" autocomplete="off"></label>
+          <div class="btn-row"><button id="trkAuto" class="mini" title="Un modelo busca las esquinas, las áreas y el círculo central en el video y calcula la cámara solo. Funciona cuando se ven bastantes líneas de la cancha.">Solo la cancha</button><button id="trkRun" class="mini" title="Solo los jugadores, con la cancha que ya tengas calibrada">Solo los jugadores</button><button id="trkCalib" class="mini" title="Marca tú 4 o más puntos conocidos de la cancha en el video">Calibrar a mano</button></div>
+        </div>
+      </details>
+      <details class="disclosure">
+        <summary>Para quien integra datos</summary>
+        <div class="disclosure-body"><p class="muted small">Un lector de tracking puede alimentar la herramienta cuadro a cuadro con <code>window.fosAnalyst.push(frame)</code> (mismo formato que el JSON del tracker).</p></div>
+      </details>
+    </section>
+
+    <section class="tab-panel" role="tabpanel" data-panel="capas" hidden>
+      <label class="check row-switch" id="trkLinesRow" hidden><span class="layer-name">Líneas de la cancha sobre el video <span class="hint">siguen a la cámara</span></span><input type="checkbox" id="trkLines" checked></label>
+      <div class="layer" data-layer="vor">
+        <label class="check"><input type="checkbox" id="vorOn" checked><span class="layer-name">Espacio <span class="hint">Voronoi · Apolonio</span></span></label>
+        <div class="opts">
+          <label>Modelo<select id="vorMode"><option value="voronoi">Voronoi (el más cercano)</option><option value="apollonius" selected>Apolonio (quién llega primero)</option></select></label>
+          <label id="gainRow">Peso de la velocidad <output id="gainOut">0,9</output><input type="range" id="vorGain" min="0" max="1.5" step="0.05" value="0.9"></label>
+          <label class="check"><input type="checkbox" id="vorEdges" checked> Línea entre los dos equipos</label>
+          <label>Opacidad <input type="range" id="vorAlpha" min="0.05" max="0.6" step="0.01" value="0.26"></label>
+        </div>
+      </div>
+
+      <div class="layer" data-layer="net">
+        <label class="check"><input type="checkbox" id="netOn"><span class="layer-name">Red de pases <span class="hint">quién se la da a quién</span></span></label>
+        <div class="opts">
+          <label>Equipo<select id="netTeam"></select></label>
+          <label>Ventana<select id="netWin"><option value="all">Todo hasta ahora</option><option value="30">Últimos 30 s</option><option value="60">Últimos 60 s</option><option value="120">Últimos 2 min</option></select></label>
+          <label>Pases mínimos <output id="netMinOut">1</output><input type="range" id="netMin" min="1" max="8" step="1" value="1"></label>
+          <p class="muted small" id="netInfo">Sin balón en los datos: marca los pases a mano con la herramienta «Marcar pase».</p>
+        </div>
+      </div>
+
+      <div class="layer" data-layer="line">
+        <label class="check"><input type="checkbox" id="lineOn" checked><span class="layer-name">Línea defensiva <span class="hint">se queda dibujada</span></span></label>
+        <div class="opts">
+          <label>Equipo<select id="lineTeam"></select></label>
+          <label>Línea<select id="lineMethod"><option value="back4">Promedio de los 4 más atrás</option><option value="last">Último defensa (fuera de juego)</option><option value="selected">Jugadores que elijo (la línea los sigue)</option></select></label>
+          <label>Ataca hacia<select id="lineDir"><option value="auto">Automático</option><option value="1">Derecha →</option><option value="-1">← Izquierda</option></select></label>
+          <p class="muted small" id="lineDirNote"></p>
+          <label class="check"><input type="checkbox" id="lineGk"> Contar al arquero</label>
+          <label class="check"><input type="checkbox" id="lineLast" checked> Marcar también al último hombre</label>
+          <label class="check"><input type="checkbox" id="lineTrail" checked> Estela de los últimos segundos</label>
+          <label class="check"><input type="checkbox" id="offOn"> Línea de fuera de juego del rival</label>
+        </div>
+      </div>
+
+      <div class="layer" data-layer="shape">
+        <label class="check"><input type="checkbox" id="shapeOn"><span class="layer-name">Red del equipo <span class="hint">triangulación y forma</span></span></label>
+        <div class="opts">
+          <label>Equipo<select id="shapeTeam"></select></label>
+          <label class="check"><input type="checkbox" id="shapeNet" checked> Unir a todos los jugadores con sus vecinos</label>
+          <label class="check"><input type="checkbox" id="shapeFill" checked> Rellenar los triángulos</label>
+          <label>Alcance de cada unión <output id="shapeMaxOut">35 m</output><input type="range" id="shapeMax" min="12" max="60" step="1" value="35"></label>
+          <label class="check"><input type="checkbox" id="shapeLen"> Mostrar las distancias</label>
+          <label class="check"><input type="checkbox" id="shapeHull" checked> Envolvente y centro del equipo</label>
+        </div>
+      </div>
+      <div class="layer" id="cameraFootprintLayer" hidden><label class="check"><span class="layer-name">Huella de cámara TV <span class="hint">zona de la cancha visible en este cuadro</span></span><input type="checkbox" id="cameraFootprintOn" checked></label></div>
+      <div class="layer" id="slotsLayer" hidden><label class="check"><span class="layer-name">Los 11 de cada equipo <span class="hint">siempre en la cancha: lleno si se ve, hueco si se estima</span></span><input type="checkbox" id="slotsOn"></label><p id="slotsNote" class="muted small"></p></div>
+      <div class="layer"><label class="check"><span class="layer-name">Predicción <span class="hint">a los que salen de cuadro</span></span><input type="checkbox" id="predOn"></label><p id="predNote" class="muted small" hidden></p></div>
+    </section>
+
+    <section class="tab-panel" role="tabpanel" data-panel="equipos" hidden>
+      <div class="card">
+        <p id="dataInfo" class="muted small">Sin datos. Abre un video, o el JSON o el CSV del tracker.</p>
+        <div class="teams" id="teamBox">
+          <div class="team-row"><input type="color" id="team0Color" value="#3f8fd2" title="Color del equipo A" aria-label="Color del equipo A"><input id="team0Name" value="Equipo A" maxlength="24" aria-label="Nombre del equipo A"></div>
+          <div class="team-row"><input type="color" id="team1Color" value="#e8780f" title="Color del equipo B" aria-label="Color del equipo B"><input id="team1Name" value="Equipo B" maxlength="24" aria-label="Nombre del equipo B"></div>
+          <button id="swapTeams" class="mini ghost" title="Si el tracker puso a cada equipo con el nombre del otro">Intercambiar A ↔ B</button>
+        </div>
+      </div>
+      <label class="check row-switch"><span class="layer-name">Mostrar a quienes no tienen equipo <span class="hint">árbitro, porteros, banca: clic con «Cambiar equipo»</span></span><input type="checkbox" id="othersOn" checked></label>
+      <div class="roles-box" id="rolesBox">
+        <p class="muted small">Quién es cada persona (lo decide el sistema por dónde está, cómo se mueve y su color: puede equivocarse, y se corrige con «Cambiar equipo»):</p>
+        <label class="check"><input type="checkbox" id="role_arbitro" checked><span><i class="rdot" style="background:#ffd23f"></i>Árbitro</span></label>
+        <label class="check"><input type="checkbox" id="role_juez_linea" checked><span><i class="rdot" style="background:#ffb02e"></i>Juez de línea</span></label>
+        <label class="check"><input type="checkbox" id="role_calentando" checked><span><i class="rdot" style="background:#7cc4ff"></i>Suplente calentando</span></label>
+        <label class="check"><input type="checkbox" id="role_recogepelotas" checked><span><i class="rdot" style="background:#7dffb3"></i>Recogepelotas</span></label>
+        <label class="check"><input type="checkbox" id="role_fotografo" checked><span><i class="rdot" style="background:#c7a6ff"></i>Fotógrafo</span></label>
+        <label class="check"><input type="checkbox" id="role_personal"><span><i class="rdot" style="background:#c7c7cc"></i>Personal (seguridad, banco)</span></label>
+        <label class="check"><input type="checkbox" id="role_dudoso"><span><i class="rdot" style="background:#6b6b73"></i>Sin decidir (sombras, recorridos cortos)</span></label>
+      </div>
+      <div class="card"><div class="reds" id="redBox">
+          <div class="step-h">Expulsiones</div>
+          <div class="pair"><label>Equipo<select id="redTeam"></select></label><button id="redAdd" class="mini" title="Mueve la línea de tiempo al instante de la tarjeta roja y pulsa aquí">Expulsado desde este instante</button></div>
+          <div id="redList" class="shape-list"></div>
+          <p class="muted small">Desde ese instante el equipo juega con 10: no se espera ni se predice un undécimo jugador, y su forma se mide con los 10.</p>
+        </div></div>
+      <div class="card" id="labelBox">
+        <div class="step-h">Etiquetas para entrenar</div>
+        <p class="muted small">Cada vez que corriges el equipo de un jugador queda guardado, con los rasgos de su track, en un archivo de este computador: con decenas de partidos etiquetados se puede entrenar un modelo que identifique mejor. Si los demás equipos están bien, dalos por buenos.</p>
+        <div class="btn-row"><button id="labelConfirm" class="mini" disabled title="Guarda todos los tracks de este análisis con el equipo que tienen ahora">Dar por buenos los demás equipos</button></div>
+        <p class="muted small" id="labelInfo"></p>
+      </div>
+      <h2 class="group-title">Ahora</h2>
+      <div id="metrics" class="metrics"></div>
+    </section>
+
+    <section class="tab-panel" role="tabpanel" data-panel="jugadores" hidden>
+      <section id="tacticalAnnotations" aria-label="Anotaciones de jugadores en cancha 2D"></section>
+      <div class="card units-card" id="unitsCard">
+        <div class="pair"><label>Líneas del equipo<select id="unitTeam"></select></label></div>
+        <div class="btn-row" id="unitAdd"><button class="mini" data-kind="def" type="button">+ Defensa</button><button class="mini" data-kind="mid" type="button">+ Mediocampo</button><button class="mini" data-kind="fwd" type="button">+ Delantera</button><button class="mini ghost" data-kind="custom" type="button">+ Otra</button></div>
+        <div id="unitList" class="unit-list"></div>
+        <p class="muted small" id="unitHint">Crea una línea, pulsa «Elegir» y haz clic en los jugadores de la cancha que la forman. Doble clic en un jugador: su número y su nombre.</p>
+        <label class="check row-switch"><span class="layer-name">Número dentro del punto <span class="hint">el de la camiseta, si se lo diste; si no, ID de tracking</span></span><input type="checkbox" id="lookNum"></label>
+        <label class="check row-switch"><span class="layer-name">Nombre debajo</span><input type="checkbox" id="lookName" checked></label>
+        <div class="pair speed-pair"><label>Velocidad (km/h)<select id="lookSpeed"><option value="off">No mostrar</option><option value="lines">Solo los jugadores de mis líneas</option><option value="all">Todos</option></select></label></div>
+        <label class="check row-switch"><span class="layer-name">Medidas de las líneas <span class="hint">distancia a su arco y ancho</span></span><input type="checkbox" id="lookMeasure" checked></label>
+      </div>
+      <div class="card stats-card">
+        <div class="pair"><label>Ordenar por<select id="statsSort"><option value="distance">Distancia</option><option value="top">Velocidad máxima</option><option value="sprints">Sprints</option><option value="hi">Alta intensidad</option></select></label><label>Equipo<select id="statsTeam"><option value="all">Ambos</option><option value="0">Equipo A</option><option value="1">Equipo B</option></select></label></div>
+        <div id="stats" class="stats"></div>
+              </div>
+    </section>
+
+    <section class="tab-panel" role="tabpanel" data-panel="dibujo" hidden>
+      <div class="card">
+        <div class="tool-grid" id="tools" role="toolbar" aria-label="Herramientas de dibujo">
+          <button data-tool="select" class="active" title="Seleccionar (V)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5l12 8-5.2 1.3L10 18.5z"/></svg><span>Seleccionar</span></button>
+          <button data-tool="arrow" title="Flecha (A)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M10 5h9v9"/></svg><span>Flecha</span></button>
+          <button data-tool="line" title="Línea (L)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5"/></svg><span>Línea</span></button>
+          <button data-tool="zone" title="Zona (Z): un clic por punto, doble clic cierra"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9l6-5 9 4-2 10-11 1z"/></svg><span>Zona</span></button>
+          <button data-tool="rect" title="Rectángulo (R)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="2"/></svg><span>Rectángulo</span></button>
+          <button data-tool="circle" title="Círculo (C)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><span>Círculo</span></button>
+          <button data-tool="pen" title="Lápiz (P)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1L19 8a2.1 2.1 0 00-3-3L5 16z"/></svg><span>Lápiz</span></button>
+          <button data-tool="text" title="Texto (T)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg><span>Texto</span></button>
+          <button data-tool="pick" title="Elige los jugadores que forman la línea"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18.5" cy="12" r="2"/><path d="M7.5 12h2.5M14 12h2.5"/></svg><span>Elegir línea</span></button>
+          <button data-tool="pass" title="Marca un pase: pasador y receptor"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.4"/><circle cx="19" cy="12" r="2.4"/><path d="M8 12h8m-3-3l3 3-3 3"/></svg><span>Marcar pase</span></button>
+          <button data-tool="team" title="Cambia de equipo a un jugador (toda su trayectoria): para corregir al tracker"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h11l-3-3.5M17 16H6l3 3.5"/></svg><span>Cambiar equipo</span></button>
+        </div>
+        <div class="pair"><label>Color<input type="color" id="color" value="#ffd23f"></label><label>Opacidad<input type="range" id="alpha" min="0.1" max="1" step="0.05" value="0.35"></label></div>
+        <label class="check"><input type="checkbox" id="follow"> El círculo sigue al jugador más cercano</label>
+        <p id="hint" class="muted small">Elige una herramienta y dibuja sobre la cancha. Supr borra lo seleccionado; Ctrl+Z deshace.</p>
+      </div>
+      <h2 class="group-title">Dibujos</h2>
+      <div id="shapeList" class="shape-list"><p class="muted small">Todavía no dibujas nada.</p></div>
+      <div id="shapeProps" class="card" hidden>
+        <div class="pair"><label>Desde (s)<input type="number" id="shT0" step="0.1" placeholder="siempre"></label><label>Hasta (s)<input type="number" id="shT1" step="0.1" placeholder="siempre"></label></div>
+        <button id="shDelete" class="danger">Eliminar dibujo</button>
+      </div>
+    </section>
+  </aside>
+</main>
+<input id="fileData" type="file" accept=".json,.csv,application/json,text/csv" multiple hidden><input id="fileVideo" type="file" accept="video/*" hidden><input id="fileH" type="file" accept=".json,application/json" hidden><input id="fileProject" type="file" accept=".json,application/json" hidden>
+<script type="module" src="analyst.js"></script></body></html>

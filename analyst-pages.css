@@ -1,0 +1,7 @@
+/* Only the packaged copy receives these overrides. Inference stays on the PC. */
+#cta,#trkAll,#trkBarWrap,#trkMsg,#trkQuality,#trkUseAnyway,#trkCancel,#matchCard,#exportMatchCsv,#exportSlotsCsv,#labelBox,#realClip,#emptyDemo,.fos-nav{display:none!important}
+[data-panel=analisis]>details.disclosure:first-of-type{display:none!important}
+.ta-calibration{display:none!important}
+.static-note{padding:9px 14px;margin:0;border-bottom:1px solid var(--line,#30363d);font-size:12px;color:#d8f46b;background:#111b17}
+.static-note a{color:inherit}.hero-card h1{font-size:32px}.an-main{min-height:75vh}
+@media(max-width:700px){.toolbar{flex-wrap:wrap}.head-actions{flex-wrap:wrap}.static-note{font-size:11px}}

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'none'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer"><title>FOS · Replay Studio</title><link rel="stylesheet" href="pages.css"></head>
+<body><main>
+<header><a class="brand" href="./">FOS <span>Replay Studio</span></a><span class="badge">Visor en tu dispositivo</span></header>
+<section class="intro"><p class="eyebrow">VIDEO + CANCHA 2D</p><h1>Revisa la jugada.<br>Dibuja tu análisis.</h1><p>Elige un video de TV o de cámara táctica, marca el tramo y abre tus datos de tracking. Destaca jugadores, enlaza una línea defensiva y dibuja zonas en la cancha.</p></section>
+<section class="setup" aria-label="Preparar el video">
+<form id="setupForm">
+<label class="file">1. Video de este dispositivo<input id="videoFile" type="file" accept="video/*,.mp4,.webm,.mov,.m4v,.mkv" required><span>El archivo se abre localmente; no se sube.</span></label>
+<div class="fields"><label>Tipo de cámara<select id="cameraType"><option value="tv">Transmisión TV</option><option value="tactical">Cámara táctica</option></select></label><label>Desde · min:seg<input id="fromTime" value="0:00" inputmode="decimal" autocomplete="off" required></label><label>Hasta · min:seg<input id="toTime" value="1:00" inputmode="decimal" autocomplete="off" required></label></div>
+<details><summary>2. Añadir tracking y cámara para el mapa 2D</summary><label>Tracking JSON/CSV y continuidad opcional<input id="trackingFiles" type="file" accept=".json,.csv,application/json,text/csv" multiple><span>Usa los archivos del mismo video y revisión. No se incluye ningún partido privado en esta web.</span></label><label>Homografías / cámara JSON · opcional<input id="cameraFile" type="file" accept=".json,application/json"><span>Necesario para superponer la cancha sobre la imagen. Un plano de TV que cambia requiere calibración por cuadro.</span></label></details>
+<div class="actions"><button class="primary" id="openButton" type="submit">Abrir video y análisis</button><button id="previewButton" type="button" disabled>Reproducir tramo</button><a href="analyst.html">Abrir Analyst directamente ↗</a></div>
+<p id="setupStatus" role="status" aria-live="polite">Selecciona un video para empezar.</p>
+</form><div class="preview"><video id="preview" controls playsinline preload="metadata" aria-label="Vista previa del video seleccionado"></video><p id="videoMetadata">Compatible con videos que pueda decodificar tu navegador. Si un formato no abre, conviértelo a MP4 H.264/AAC.</p></div>
+</section>
+<section id="limits" class="limits"><h2>Qué puedes hacer aquí</h2><p><strong>Con video:</strong> reproducir el tramo. <strong>Con tracking:</strong> ver el mapa 2D, cambiar colores y usar Voronoi, redes, destacados, enlaces y zonas. Guarda el proyecto o exporta las anotaciones JSON para llevarlas a otro dispositivo.</p><p><strong>El análisis automático se ejecuta en el PC con Python/GPU.</strong> GitHub Pages sirve esta interfaz: no detecta jugadores, no calibra un video nuevo y no entrena modelos. Elegir «TV» o «Táctica» describe la fuente; no transforma la cámara. Sin tracking no se inventan posiciones 2D. Las estimaciones importadas siguen siendo estimaciones.</p></section>
+<section id="workspace" hidden><div class="workspace-title"><h2>FOS Analyst</h2><span id="workspaceNote">Tus archivos permanecen en este navegador.</span></div><iframe id="analystFrame" title="FOS Analyst: video y cancha 2D" allow="fullscreen" loading="lazy"></iframe></section>
+<footer>Los archivos y las anotaciones no se sincronizan automáticamente entre dispositivos. Conserva tus exportaciones.</footer>
+</main><script type="module" src="pages-app.js"></script></body></html>
