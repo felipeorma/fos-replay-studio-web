@@ -140,10 +140,10 @@
     },
     "index.html": {
       "source": "tools/pages_site/index.html",
-      "source_sha256": "9ab737d4bffe3920c3a8e9b43c585100ba35f7428b468ed29867802a13340f5f",
+      "source_sha256": "3600152846bb370c5c0aadc3edaecbd5db82d1696fc38298c3e278402a385ea5",
       "transformation": "byte-for-byte copy",
-      "bytes": 4031,
-      "sha256": "9ab737d4bffe3920c3a8e9b43c585100ba35f7428b468ed29867802a13340f5f"
+      "bytes": 5426,
+      "sha256": "3600152846bb370c5c0aadc3edaecbd5db82d1696fc38298c3e278402a385ea5"
     },
     "lines.js": {
       "source": "lines.js",
@@ -168,24 +168,24 @@
     },
     "pages-app.js": {
       "source": "tools/pages_site/pages-app.js",
-      "source_sha256": "79af96883e5a90f32cecb6827059bee42c9260d53eda83a9a512bc83b28b2a66",
+      "source_sha256": "8ba7638580e27a53641ed4be4b46a485bf04d5652115edb9228a10583b2a3ee1",
       "transformation": "byte-for-byte copy",
-      "bytes": 3637,
-      "sha256": "79af96883e5a90f32cecb6827059bee42c9260d53eda83a9a512bc83b28b2a66"
+      "bytes": 5596,
+      "sha256": "8ba7638580e27a53641ed4be4b46a485bf04d5652115edb9228a10583b2a3ee1"
     },
     "pages-core.js": {
       "source": "tools/pages_site/pages-core.js",
-      "source_sha256": "8be36bb769def781bfbf7b63568973887ad13aaabbcdc81d61dbf9c67f5c78b9",
+      "source_sha256": "4fa3f723a8a2bcde189a08f24b2d4d8c7325656d3cb3f6823396061076c7d570",
       "transformation": "byte-for-byte copy",
-      "bytes": 1494,
-      "sha256": "8be36bb769def781bfbf7b63568973887ad13aaabbcdc81d61dbf9c67f5c78b9"
+      "bytes": 2767,
+      "sha256": "4fa3f723a8a2bcde189a08f24b2d4d8c7325656d3cb3f6823396061076c7d570"
     },
     "pages.css": {
       "source": "tools/pages_site/pages.css",
-      "source_sha256": "64fde44850f56bf4914366690cce3b4b18479453b079a158aeb8f1c5af92d1b1",
+      "source_sha256": "474b25eb6dfdbddd80a38035d36ced94bf6805537a6c6b1ef19103064af48acd",
       "transformation": "byte-for-byte copy",
-      "bytes": 3980,
-      "sha256": "64fde44850f56bf4914366690cce3b4b18479453b079a158aeb8f1c5af92d1b1"
+      "bytes": 4591,
+      "sha256": "474b25eb6dfdbddd80a38035d36ced94bf6805537a6c6b1ef19103064af48acd"
     },
     "prediction.js": {
       "source": "prediction.js",

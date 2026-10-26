@@ -1,4 +1,4 @@
-import {playbackRange, cameraLabel, isVideo, displayTime} from './pages-core.js';
+import {playbackRange, cameraLabel, isVideo, displayTime, privatePCOrigin, readPrivatePC, savePrivatePC, forgetPrivatePC, privatePCDashboard} from './pages-core.js';
 const $ = id => document.getElementById(id), preview = $('preview');
 let videoURL = null, frameReady = null;
 const notice = (text, error = false) => { $('setupStatus').textContent = text; $('setupStatus').classList.toggle('error', error); };
@@ -54,3 +54,37 @@ $('setupForm').onsubmit = async event => {
   finally { $('openButton').disabled = false; }
 };
 addEventListener('pagehide', () => { if (videoURL) URL.revokeObjectURL(videoURL); });
+
+function setupPrivatePC() {
+  const input = $('privatePCUrl'), link = $('privatePCOpen'), status = $('privatePCStatus');
+  const message = (text, error = false) => { status.textContent = text; status.classList.toggle('error', error); };
+  const hide = () => { link.hidden = true; link.removeAttribute('href'); };
+  const show = origin => {
+    link.setAttribute('href', privatePCDashboard(origin));
+    link.setAttribute('target', '_blank');
+    link.setAttribute('rel', 'noopener noreferrer');
+    link.hidden = false;
+  };
+  hide();
+  try {
+    const saved = readPrivatePC(localStorage);
+    if (saved) { input.value = saved; show(saved); message('Dirección guardada en este navegador. Abre tu PC para analizar.'); }
+  } catch { message('No se pudo recuperar una dirección privada válida. Puedes introducirla de nuevo.', true); }
+  input.addEventListener('input', () => { hide(); message('Guarda la dirección para abrir el análisis en tu PC.'); });
+  $('privatePCForm').addEventListener('submit', event => {
+    event.preventDefault(); hide();
+    try {
+      const validated = privatePCOrigin(input.value);
+      let saved;
+      try { saved = savePrivatePC(localStorage, validated); }
+      catch { message('Este navegador no permite guardar la dirección. Habilita el almacenamiento local para este sitio y vuelve a intentarlo.', true); return; }
+      input.value = saved; show(saved); message('Dirección guardada sólo en este navegador. El análisis se abre en tu PC.');
+    } catch (error) { message(error.message, true); }
+  });
+  $('privatePCForget').addEventListener('click', () => {
+    hide(); input.value = '';
+    try { forgetPrivatePC(localStorage); message('Dirección eliminada de este navegador.'); }
+    catch { message('No se pudo borrar el almacenamiento. Elimina los datos de este sitio desde tu navegador.', true); }
+  });
+}
+setupPrivatePC();
