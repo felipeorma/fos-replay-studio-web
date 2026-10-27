@@ -102,7 +102,7 @@ function setData(raw, label, chunk = null) {   // `chunk` = {i, h, t}: a stretch
 }
 async function loadFile(file) {
   const text = await file.text();
-  try { setData(file.name.toLowerCase().endsWith('.csv') ? text : JSON.parse(text), file.name); } catch (e) { status(`No pude leer ${file.name}: ${e.message}`); }
+  try { setData(file.name.toLowerCase().endsWith('.csv') ? text : JSON.parse(text), file.name); } catch (e) { status(`No pude leer ${file.name}: ${e.message}`); return false; }
 }
 function installContinuity(bundle) {
   S.continuitySession=prepareAnalystContinuity(S.rawTracking,S.data,bundle);
@@ -830,7 +830,7 @@ $('fileData').onchange = async e => {
   const home = files.find(f => /home/i.test(f.name)), away = files.find(f => /away/i.test(f.name));
   if (files.length >= 2 && home && away) {   // the Metrica sample data: Home and Away, a whole match is too big for the browser, so a range of minutes
     const a = prompt('Datos de Metrica: ¿desde qué minuto? (el partido completo pesa demasiado)', '0'), b = a === null ? null : prompt('¿Hasta qué minuto?', String(+a + 5)); if (a === null || b === null) return;
-    try { status('Leyendo los archivos de Metrica…'); setData(fromMetrica(await home.text(), await away.text(), {t0: +a * 60, t1: +b * 60}), `Metrica · minutos ${a}–${b} (local: azul, visita: naranja)`); } catch (err) { status(`No pude leer los datos de Metrica: ${err.message}`); }
+    try { status('Leyendo los archivos de Metrica…'); setData(fromMetrica(await home.text(), await away.text(), {t0: +a * 60, t1: +b * 60}), `Metrica · minutos ${a}–${b} (local: azul, visita: naranja)`); } catch (err) { status(`No pude leer los datos de Metrica: ${err.message}`); return false; }
   } else if(files.length>1&&files.every(f=>/\.json$/i.test(f.name))){
     try{
       const rows=await Promise.all(files.map(async file=>{const text=await file.text();return{file,text,raw:JSON.parse(text)};}));
@@ -842,7 +842,7 @@ $('fileData').onchange = async e => {
       const trackingSha=await analystTrackingSha(tracked.text);
       setData(tracked.raw,tracked.file.name);installContinuity({reconstruction,continuity,settings,trackingSha});
       status(S.continuitySession?'Tracking y continuidad revisada cargados.':'Tracking cargado sin asociaciones de cámara revisadas.');
-    }catch(err){status(`No pude abrir la revisión: ${err.message}`);}
+    }catch(err){status(`No pude abrir la revisión: ${err.message}`); return false;}
   }else return loadFile(files[0]);
 };
 // the coordinates of every player in every frame, out: a CSV the tracker's reader opens again, or the same in JSON
@@ -900,7 +900,7 @@ $('fileH').onchange = async e => {
     if (raw.image && raw.pitch) { S.H = homography(raw.image, raw.pitch); S.Hmap = null; setCalib({image: raw.image, pitch: raw.pitch}); } else if (Array.isArray(raw) && raw.length === 3) { S.H = raw; S.Hmap = null; }
     else { const byFrame = {}; for (const [k, v] of Object.entries(raw)) if (/^\d+$/.test(k)) byFrame[+k] = v; const keys = Object.keys(byFrame).map(Number).sort((a, b) => a - b); if (!keys.length) throw new Error('el archivo no tiene matrices'); S.Hmap = {byFrame, keys}; S.H = null; }
     $('videoInfo').textContent = `Cámara: ${f.name}`; status('Cámara cargada: las capas se dibujan sobre el video'); render();
-  } catch (err) { status(`No pude leer la cámara: ${err.message}`); }
+  } catch (err) { status(`No pude leer la cámara: ${err.message}`); return false; }
 };
 $('calib').onclick = () => {
   if (!video.src) { status('Abre primero el video'); return; } S.calibOn = !S.calibOn; S.calibPts = []; if (S.view === 'pitch') document.querySelector('[data-view="both"]').click();
@@ -1295,10 +1295,11 @@ async function pagesOpen({video: file, tracking = [], camera = null, range, type
     video.src = S.videoURL;
   });
   if (tracking.length) {
-    await $('fileData').onchange({target: {files: tracking}});
-    if (!S.data) throw new Error('No se pudo leer el tracking. Revisa el formato de tus archivos.');
+    const imported = await $('fileData').onchange({target: {files: tracking}});
+    if (imported === false || !S.data) throw new Error('No se pudo leer el tracking o su revisión. Abre archivos compatibles del mismo video.');
   }
-  if (camera) await $('fileH').onchange({target: {files: [camera]}});
+  if (camera && await $('fileH').onchange({target: {files: [camera]}}) === false)
+    throw new Error('No se pudo leer la cámara. Revisa el archivo de homografías.');
   const valid = playbackRange(String(range?.start ?? 0), String(range?.end ?? Math.min(30, video.duration)), video.duration);
   pagesRange = valid; $('trkFrom').value = clockOf(valid.start); $('trkTo').value = clockOf(valid.end);
   video.currentTime = valid.start;

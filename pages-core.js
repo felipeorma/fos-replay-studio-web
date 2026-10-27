@@ -11,8 +11,8 @@ export function playbackRange(from, to, duration) {
   if (!Number.isFinite(duration) || duration <= 0) throw new Error('Espera a que el navegador lea la duración del video.');
   if (start >= end) throw new Error('El final debe ser posterior al inicio.');
   if (end < start + 1 || end > start + 30) throw new Error('Elige un fragmento de 1 a 30 segundos.');
-  if (end > duration + 0.05) throw new Error('El tramo supera la duración del video.');
-  return {start, end: Math.min(end, duration)};
+  if (end > duration) throw new Error('El tramo supera la duración del video.');
+  return {start, end};
 }
 export function cameraLabel(type) {
   if (!['tv', 'tactical'].includes(type)) throw new Error('Selecciona TV o cámara táctica.');

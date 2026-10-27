@@ -12,7 +12,9 @@ function flow(stage, text, error = false) {
   if ($('pipelineStatus')) { $('pipelineStatus').textContent = text; $('pipelineStatus').classList.toggle('error', error); }
 }
 function selectedRange() { return playbackRange($('fromTime').value, $('toTime').value, preview.duration); }
+const endpointTime = seconds => displayTime(Math.floor(seconds * 100) / 100);
 function updateRange() {
+  for (const id of ['videoFile', 'trackingFiles', 'cameraFile', 'fromTime', 'toTime', 'cameraType']) $(id).disabled = opening;
   for (const id of ['markStart', 'markEnd']) if ($(id)) $(id).disabled = !videoURL || !Number.isFinite(preview.duration) || opening;
   try {
     const range = selectedRange();
@@ -44,7 +46,7 @@ function chooseVideo(f) {
 $('videoFile').onchange = () => chooseVideo($('videoFile').files[0]);
 preview.addEventListener('loadedmetadata', () => {
   if (!Number.isFinite(preview.duration) || preview.duration <= 0) return notice('No pude leer la duración de este video.', true);
-  $('fromTime').value = '0:00'; $('toTime').value = displayTime(Math.min(30, preview.duration));
+  $('fromTime').value = '0:00'; $('toTime').value = endpointTime(Math.min(30, preview.duration));
   $('videoMetadata').textContent = `${preview.videoWidth} × ${preview.videoHeight} · duración ${displayTime(preview.duration)} · se conserva la proporción original`;
   updateRange(); notice('Video listo. Revisa hasta 30 segundos. Para detectar jugadores y líneas, abre el análisis en tu PC.');
   flow('analyze', 'Elige el tramo. El análisis automático se ejecuta en tu PC privado.');
@@ -52,11 +54,11 @@ preview.addEventListener('loadedmetadata', () => {
 preview.addEventListener('error', () => { notice('El navegador no puede reproducir este archivo. Prueba MP4 H.264/AAC.', true); $('previewButton').disabled = true; $('openButton').disabled = true; flow('load', 'El formato de video no pudo abrirse.', true); });
 for (const id of ['fromTime', 'toTime']) $(id).addEventListener('input', updateRange);
 for (const button of document.querySelectorAll('[data-clip-seconds]')) button.addEventListener('click', () => {
-  try { const start = parseTime($('fromTime').value); $('toTime').value = displayTime(Math.min(preview.duration, start + Number(button.dataset.clipSeconds))); updateRange(); }
+  try { const start = parseTime($('fromTime').value); $('toTime').value = endpointTime(Math.min(preview.duration, start + Number(button.dataset.clipSeconds))); updateRange(); }
   catch { notice('Selecciona primero un video y un inicio válido.', true); }
 });
-if ($('markStart')) $('markStart').onclick = () => { $('fromTime').value = displayTime(preview.currentTime); $('toTime').value = displayTime(Math.min(preview.duration, preview.currentTime + 30)); updateRange(); };
-if ($('markEnd')) $('markEnd').onclick = () => { $('fromTime').value = displayTime(Math.max(0, preview.currentTime - 30)); $('toTime').value = displayTime(preview.currentTime); updateRange(); };
+if ($('markStart')) $('markStart').onclick = () => { $('fromTime').value = endpointTime(preview.currentTime); $('toTime').value = endpointTime(Math.min(preview.duration, preview.currentTime + 30)); updateRange(); };
+if ($('markEnd')) $('markEnd').onclick = () => { $('fromTime').value = endpointTime(Math.max(0, preview.currentTime - 30)); $('toTime').value = endpointTime(preview.currentTime); updateRange(); };
 if ($('dropzone')) {
   for (const name of ['dragenter', 'dragover']) $('dropzone').addEventListener(name, event => { event.preventDefault(); $('dropzone').classList.add('dragging'); });
   for (const name of ['dragleave', 'drop']) $('dropzone').addEventListener(name, event => { event.preventDefault(); $('dropzone').classList.remove('dragging'); });
@@ -97,13 +99,14 @@ $('setupForm').onsubmit = async event => {
   try {
     const video = $('videoFile').files[0]; if (!isVideo(video)) throw new Error('Selecciona primero un video.');
     const range = selectedRange(), type = $('cameraType').value; cameraLabel(type);
+    const tracking = [...$('trackingFiles').files], camera = $('cameraFile').files[0] || null;
     opening = true; preview.pause(); updateRange(); $('workspace').hidden = false;
     notice('Abriendo los archivos locales en Analyst…');
     const analyst = await getAnalyst();
     if (revision !== sourceRevision) return;
-    await analyst.open({video, tracking: [...$('trackingFiles').files], camera: $('cameraFile').files[0] || null, range, type});
+    await analyst.open({video, tracking, camera, range, type});
     if (revision !== sourceRevision) return;
-    const hasTracking = $('trackingFiles').files.length > 0;
+    const hasTracking = tracking.length > 0;
     document.body.dataset.workspace = 'open';
     $('workspaceNote').textContent = `${cameraLabel(type)} · ${displayTime(range.start)}–${displayTime(range.end)} · ${hasTracking ? 'tracking importado, calidad pendiente de tus datos' : 'video sin detecciones: añade tracking para ver jugadores 2D'}`;
     notice('Abierto. El video y los datos no se han subido. Guarda o exporta tus anotaciones antes de cerrar.');

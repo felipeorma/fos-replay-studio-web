@@ -51,7 +51,7 @@
   "sources": {
     "adapter": {
       "path": "tools/pages_site/analyst-pages-adapter.js",
-      "sha256": "76ff71a8d6ca2acad1defaa963a488cc534f9899452a1ded2c5eadb41b89ca78"
+      "sha256": "af3ecf48857c6ce6413dd76fad52110c3582ab90a931642ccf4df4d8a502fab1"
     }
   },
   "files": {
@@ -100,8 +100,8 @@
       "source": "analyst.js",
       "source_sha256": "a925cd500e10473bb753efbb0604293b432687da734f60fcf0112019dca27ef6",
       "transformation": "deny network; remove server discovery/upload/model loading; append local File adapter",
-      "bytes": 147271,
-      "sha256": "ae752ebed69ce041ef9d8b13a7dc092eba4c173a0a63026ccb959ce3ef4f7572"
+      "bytes": 147488,
+      "sha256": "9fd6f4a0e4d5496414761510c19b1dfa1a8e9c29840a361707378f9bce4e1f63"
     },
     "ball-display.js": {
       "source": "ball-display.js",
@@ -168,17 +168,17 @@
     },
     "pages-app.js": {
       "source": "tools/pages_site/pages-app.js",
-      "source_sha256": "83d3464ef6f7bf53eb7487518f968620504ae90df2240a029fc22cd461719894",
+      "source_sha256": "ee3d803a5bb4e4204dc7f9db4df94e981262263d163b6ff8c7661fced32490bd",
       "transformation": "byte-for-byte copy",
-      "bytes": 10451,
-      "sha256": "83d3464ef6f7bf53eb7487518f968620504ae90df2240a029fc22cd461719894"
+      "bytes": 10676,
+      "sha256": "ee3d803a5bb4e4204dc7f9db4df94e981262263d163b6ff8c7661fced32490bd"
     },
     "pages-core.js": {
       "source": "tools/pages_site/pages-core.js",
-      "source_sha256": "751c46eaebb08d89a2420f7e1473d5b5c8678d32c7eeb7cf4965781704b3e8a9",
+      "source_sha256": "2ecc36e77f53975b14263fae9f2f69176cca3b056ff0734a2ae0596c67ee79dd",
       "transformation": "byte-for-byte copy",
-      "bytes": 2869,
-      "sha256": "751c46eaebb08d89a2420f7e1473d5b5c8678d32c7eeb7cf4965781704b3e8a9"
+      "bytes": 2837,
+      "sha256": "2ecc36e77f53975b14263fae9f2f69176cca3b056ff0734a2ae0596c67ee79dd"
     },
     "pages.css": {
       "source": "tools/pages_site/pages.css",
