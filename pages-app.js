@@ -1,23 +1,71 @@
-import {playbackRange, cameraLabel, isVideo, displayTime, privatePCOrigin, readPrivatePC, savePrivatePC, forgetPrivatePC, privatePCDashboard} from './pages-core.js';
+import {parseTime, playbackRange, cameraLabel, isVideo, displayTime, privatePCOrigin, readPrivatePC, savePrivatePC, forgetPrivatePC, privatePCDashboard} from './pages-core.js';
 const $ = id => document.getElementById(id), preview = $('preview');
-let videoURL = null, frameReady = null;
+let videoURL = null, frameReady = null, sourceRevision = 0, opening = false;
 const notice = (text, error = false) => { $('setupStatus').textContent = text; $('setupStatus').classList.toggle('error', error); };
+function flow(stage, text, error = false) {
+  const current = {load: 0, analyze: 1, ready: 2}[stage] ?? 0;
+  ['stepLoad', 'stepAnalyze', 'step2D'].forEach((id, index) => {
+    const step = $(id); if (!step) return;
+    step.dataset.state = index < current ? 'complete' : index === current ? 'active' : 'pending';
+    if (index === current) step.setAttribute('aria-current', 'step'); else step.removeAttribute('aria-current');
+  });
+  if ($('pipelineStatus')) { $('pipelineStatus').textContent = text; $('pipelineStatus').classList.toggle('error', error); }
+}
 function selectedRange() { return playbackRange($('fromTime').value, $('toTime').value, preview.duration); }
-$('videoFile').onchange = () => {
-  const f = $('videoFile').files[0];
+function updateRange() {
+  for (const id of ['markStart', 'markEnd']) if ($(id)) $(id).disabled = !videoURL || !Number.isFinite(preview.duration) || opening;
+  try {
+    const range = selectedRange();
+    for (const button of document.querySelectorAll('[data-clip-seconds]')) button.setAttribute('aria-pressed', String(range.end === range.start + Number(button.dataset.clipSeconds)));
+    if ($('clipDuration')) { $('clipDuration').textContent = `${+(range.end - range.start).toFixed(2)} s / 30 s`; $('clipDuration').classList.remove('error'); }
+    $('previewButton').disabled = !videoURL || opening; $('openButton').disabled = !videoURL || opening;
+  } catch (error) {
+    for (const button of document.querySelectorAll('[data-clip-seconds]')) button.setAttribute('aria-pressed', 'false');
+    if ($('clipDuration')) { $('clipDuration').textContent = videoURL ? error.message : 'Hasta 30 segundos'; $('clipDuration').classList.toggle('error', !!videoURL); }
+    $('previewButton').disabled = true; $('openButton').disabled = true;
+  }
+}
+function chooseVideo(f) {
   if (!isVideo(f)) { notice('Selecciona un archivo de video compatible.', true); return; }
+  ++sourceRevision; opening = false;
+  document.body.dataset.workspace = 'closed';
+  $('trackingFiles').value = ''; $('cameraFile').value = '';
+  $('workspace').hidden = true;
+  $('analystFrame').src = 'about:blank'; frameReady = null;
   preview.pause(); $('previewButton').disabled = true;
   if (videoURL) URL.revokeObjectURL(videoURL);
   videoURL = URL.createObjectURL(f); preview.src = videoURL;
+  if ($('previewEmpty')) $('previewEmpty').hidden = true;
+  $('videoMetadata').textContent = f.name;
+  $('openButton').disabled = true;
   notice('Leyendo el video en este dispositivo…');
-};
+  flow('load', 'Leyendo el archivo. Todavía no hay detecciones.');
+}
+$('videoFile').onchange = () => chooseVideo($('videoFile').files[0]);
 preview.addEventListener('loadedmetadata', () => {
   if (!Number.isFinite(preview.duration) || preview.duration <= 0) return notice('No pude leer la duración de este video.', true);
-  $('fromTime').value = '0:00'; $('toTime').value = displayTime(Math.min(60, preview.duration));
+  $('fromTime').value = '0:00'; $('toTime').value = displayTime(Math.min(30, preview.duration));
   $('videoMetadata').textContent = `${preview.videoWidth} × ${preview.videoHeight} · duración ${displayTime(preview.duration)} · se conserva la proporción original`;
-  $('previewButton').disabled = false; notice('Video listo. Puedes reproducir el tramo o añadir tracking para el mapa 2D.');
+  updateRange(); notice('Video listo. Revisa hasta 30 segundos. Para detectar jugadores y líneas, abre el análisis en tu PC.');
+  flow('analyze', 'Elige el tramo. El análisis automático se ejecuta en tu PC privado.');
 });
-preview.addEventListener('error', () => notice('El navegador no puede reproducir este archivo. Prueba MP4 H.264/AAC.', true));
+preview.addEventListener('error', () => { notice('El navegador no puede reproducir este archivo. Prueba MP4 H.264/AAC.', true); $('previewButton').disabled = true; $('openButton').disabled = true; flow('load', 'El formato de video no pudo abrirse.', true); });
+for (const id of ['fromTime', 'toTime']) $(id).addEventListener('input', updateRange);
+for (const button of document.querySelectorAll('[data-clip-seconds]')) button.addEventListener('click', () => {
+  try { const start = parseTime($('fromTime').value); $('toTime').value = displayTime(Math.min(preview.duration, start + Number(button.dataset.clipSeconds))); updateRange(); }
+  catch { notice('Selecciona primero un video y un inicio válido.', true); }
+});
+if ($('markStart')) $('markStart').onclick = () => { $('fromTime').value = displayTime(preview.currentTime); $('toTime').value = displayTime(Math.min(preview.duration, preview.currentTime + 30)); updateRange(); };
+if ($('markEnd')) $('markEnd').onclick = () => { $('fromTime').value = displayTime(Math.max(0, preview.currentTime - 30)); $('toTime').value = displayTime(preview.currentTime); updateRange(); };
+if ($('dropzone')) {
+  for (const name of ['dragenter', 'dragover']) $('dropzone').addEventListener(name, event => { event.preventDefault(); $('dropzone').classList.add('dragging'); });
+  for (const name of ['dragleave', 'drop']) $('dropzone').addEventListener(name, event => { event.preventDefault(); $('dropzone').classList.remove('dragging'); });
+  $('dropzone').addEventListener('drop', event => {
+    const files = event.dataTransfer.files;
+    if (!isVideo(files[0])) return notice('Selecciona un archivo de video compatible.', true);
+    $('videoFile').files = files; chooseVideo(files[0]);
+  });
+}
 preview.addEventListener('timeupdate', () => {
   try { const range = selectedRange(); if (!preview.paused && preview.currentTime >= range.end) preview.pause(); } catch { /* incomplete input */ }
 });
@@ -26,12 +74,17 @@ $('previewButton').onclick = async () => {
 };
 function getAnalyst() {
   if (!frameReady) {
+    const revision = sourceRevision;
     frameReady = new Promise((resolve, reject) => {
       const frame = $('analystFrame');
-      frame.addEventListener('load', () => {
-        if (frame.contentWindow.fosPages) resolve(frame.contentWindow.fosPages);
-        else { frameReady = null; reject(new Error('No se pudo iniciar Analyst. Recarga la página.')); }
-      }, {once: true});
+      const cleanup = () => { clearTimeout(timer); frame.removeEventListener('load', loaded); frame.removeEventListener('error', failed); };
+      const failed = () => { cleanup(); if (revision === sourceRevision) frameReady = null; reject(new Error('No se pudo iniciar Analyst. Vuelve a abrir el 2D.')); };
+      const loaded = () => {
+        if (frame.contentWindow?.fosPages) { cleanup(); resolve(frame.contentWindow.fosPages); }
+        else failed();
+      };
+      const timer = setTimeout(failed, 20000);
+      frame.addEventListener('load', loaded); frame.addEventListener('error', failed);
       frame.src = 'analyst.html';
     });
   }
@@ -39,19 +92,25 @@ function getAnalyst() {
 }
 $('setupForm').onsubmit = async event => {
   event.preventDefault();
+  if (opening) return;
+  const revision = sourceRevision;
   try {
     const video = $('videoFile').files[0]; if (!isVideo(video)) throw new Error('Selecciona primero un video.');
     const range = selectedRange(), type = $('cameraType').value; cameraLabel(type);
-    preview.pause(); $('openButton').disabled = true; $('workspace').hidden = false;
+    opening = true; preview.pause(); updateRange(); $('workspace').hidden = false;
     notice('Abriendo los archivos locales en Analyst…');
     const analyst = await getAnalyst();
+    if (revision !== sourceRevision) return;
     await analyst.open({video, tracking: [...$('trackingFiles').files], camera: $('cameraFile').files[0] || null, range, type});
+    if (revision !== sourceRevision) return;
     const hasTracking = $('trackingFiles').files.length > 0;
+    document.body.dataset.workspace = 'open';
     $('workspaceNote').textContent = `${cameraLabel(type)} · ${displayTime(range.start)}–${displayTime(range.end)} · ${hasTracking ? 'tracking importado, calidad pendiente de tus datos' : 'video sin detecciones: añade tracking para ver jugadores 2D'}`;
     notice('Abierto. El video y los datos no se han subido. Guarda o exporta tus anotaciones antes de cerrar.');
+    flow(hasTracking ? 'ready' : 'analyze', hasTracking ? '2D abierto con tracking importado. Revisa su calibración.' : 'Video abierto. Faltan detecciones: analiza con tu PC o importa tracking.');
     $('workspace').scrollIntoView({behavior: 'smooth', block: 'start'});
-  } catch (e) { notice(e.message, true); }
-  finally { $('openButton').disabled = false; }
+  } catch (e) { if (revision === sourceRevision) { notice(e.message, true); flow('analyze', e.message, true); $('workspace').hidden = true; document.body.dataset.workspace = 'closed'; } }
+  finally { if (revision === sourceRevision) { opening = false; updateRange(); } }
 };
 addEventListener('pagehide', () => { if (videoURL) URL.revokeObjectURL(videoURL); });
 
@@ -88,3 +147,5 @@ function setupPrivatePC() {
   });
 }
 setupPrivatePC();
+updateRange();
+flow('load', 'Carga un video. Selecciona una jugada de hasta 30 segundos.');

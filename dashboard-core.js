@@ -60,15 +60,21 @@ export function validateTimeframe(
   start,
   end,
   duration = Infinity,
-  maximum = 600,
+  maximum = 30,
 ) {
   if (![start, end].every(Number.isFinite) || start < 0 || end <= start)
     throw new Error("El final debe ser posterior al inicio.");
-  if (Number.isFinite(duration) && end > duration + 0.05)
+  if (end < start + 1)
+    throw new Error("Elige un fragmento de al menos 1 segundo.");
+  if (duration !== Infinity && (!Number.isFinite(duration) || duration <= 0))
+    throw new Error("No se pudo leer la duración del video.");
+  if (Number.isFinite(duration) && end > duration)
     throw new Error("El intervalo termina después del video.");
-  if (end - start > maximum)
+  if (!Number.isFinite(maximum) || maximum <= 0)
+    throw new Error("El máximo de segundos del fragmento no es válido.");
+  if (end > start + maximum)
     throw new Error(
-      `Elige un fragmento de hasta ${maximum / 60} minutos para este análisis.`,
+      `Elige un fragmento de hasta ${maximum} segundos para este análisis.`,
     );
   return { start, end, duration: end - start };
 }

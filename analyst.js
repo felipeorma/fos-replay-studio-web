@@ -1287,8 +1287,11 @@ async function pagesOpen({video: file, tracking = [], camera = null, range, type
   S.videoURL = URL.createObjectURL(file); S.videoFile = file; S.videoId = null;
   $('trkName').textContent = file.name;
   await new Promise((resolve, reject) => {
-    video.onloadedmetadata = () => { openVideoPane(); resolve(); };
-    video.onerror = () => reject(new Error('El navegador no puede reproducir este formato. Prueba MP4 H.264/AAC.'));
+    const cleanup = () => { clearTimeout(timer); video.onloadedmetadata = null; video.onerror = null; };
+    const fail = message => { cleanup(); reject(new Error(message)); };
+    const timer = setTimeout(() => fail('El video tardó demasiado en abrirse. Vuelve a intentarlo.'), 25000);
+    video.onloadedmetadata = () => { cleanup(); openVideoPane(); resolve(); };
+    video.onerror = () => fail('El navegador no puede reproducir este formato. Prueba MP4 H.264/AAC.');
     video.src = S.videoURL;
   });
   if (tracking.length) {
@@ -1296,7 +1299,7 @@ async function pagesOpen({video: file, tracking = [], camera = null, range, type
     if (!S.data) throw new Error('No se pudo leer el tracking. Revisa el formato de tus archivos.');
   }
   if (camera) await $('fileH').onchange({target: {files: [camera]}});
-  const valid = playbackRange(String(range?.start ?? 0), String(range?.end ?? video.duration), video.duration);
+  const valid = playbackRange(String(range?.start ?? 0), String(range?.end ?? Math.min(30, video.duration)), video.duration);
   pagesRange = valid; $('trkFrom').value = clockOf(valid.start); $('trkTo').value = clockOf(valid.end);
   video.currentTime = valid.start;
   if (S.data) { S.i = frameAtOrBefore(S.data, valid.start - vOffset()); S.t = S.data.frames[S.i].t; $('timeline').value = S.i; }
