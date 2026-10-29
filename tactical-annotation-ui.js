@@ -1,4 +1,4 @@
-import {annotationRef, annotationKey, createAnnotationStore, resolveAnnotations} from './tactical-annotations.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {annotationRef, annotationKey, createAnnotationStore, resolveAnnotations} from './tactical-annotations.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
 
 const names = {highlight: 'Destacar jugador', link: 'Enlazar jugadores', zone: 'Zona de jugadores'};
 const minimum = {highlight: 1, link: 2, zone: 3};
@@ -66,7 +66,7 @@ export function createTacticalAnnotationPanel({container, getContext, onChange =
     <div class="ta-actions"><button data-ta="undo" type="button">Deshacer</button><button data-ta="redo" type="button">Rehacer</button><button data-ta="clear" type="button">Borrar todas</button></div>
     <div class="ta-actions"><button data-ta="export" type="button">Exportar anotaciones</button><button data-ta="import" type="button">Importar JSON</button><input data-ta="file" type="file" accept=".json,application/json" hidden></div>
     <p data-ta="evidence" class="ta-evidence"></p><p data-ta="status" class="ta-status" role="status">Abre un análisis para anotar.</p>
-    <a data-ta="calibration" class="ta-calibration" href="index.html?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6#limits" target="_blank" rel="noopener">Revisar calibración con puntos de cancha ↗</a>`;
+    <a data-ta="calibration" class="ta-calibration" href="index.html?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0#limits" target="_blank" rel="noopener">Revisar calibración con puntos de cancha ↗</a>`;
   const el = name => container.querySelector(`[data-ta="${name}"]`);
   const notice = (message, error = false) => { el('status').textContent = message; el('status').classList.toggle('ta-error', error); };
   const context = () => getContext() || {};

@@ -1,4 +1,4 @@
-import {parseTime, playbackRange, cameraLabel, isVideo, displayTime, privatePCOrigin, readPrivatePC, savePrivatePC, forgetPrivatePC, privatePCDashboard} from './pages-core.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {parseTime, playbackRange, cameraLabel, isVideo, displayTime, privatePCOrigin, readPrivatePC, savePrivatePC, forgetPrivatePC, privatePCDashboard} from './pages-core.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
 const $ = id => document.getElementById(id), preview = $('preview');
 let videoURL = null, frameReady = null, sourceRevision = 0, opening = false;
 const notice = (text, error = false) => { $('setupStatus').textContent = text; $('setupStatus').classList.toggle('error', error); };
@@ -87,7 +87,7 @@ function getAnalyst() {
       };
       const timer = setTimeout(failed, 20000);
       frame.addEventListener('load', loaded); frame.addEventListener('error', failed);
-      frame.src = 'analyst.html?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+      frame.src = 'analyst.html?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
     });
   }
   return frameReady;

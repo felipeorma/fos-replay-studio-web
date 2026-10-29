@@ -1,19 +1,19 @@
-import {playbackRange, cameraLabel, isVideo} from './pages-core.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {calibrationSummary} from './dashboard-core.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {playbackRange, cameraLabel, isVideo} from './pages-core.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {calibrationSummary} from './dashboard-core.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
 async function pagesNetworkUnavailable() { throw new Error('Esta web no conecta con el servidor del PC. Importa archivos locales.'); }
 // FOS Analyst: tactical analysis over tracking data, in the browser. Loads the output of the tracker (tools/tracking) or any tracking data of the same shape, optionally with its
 // video, and draws over the pitch (and over the video when the camera is known): the space each team gets to first (Voronoi, or Apollonius with the speeds), the pass network,
 // the defensive line that follows its players, the shape of the team, and the analyst's own drawings (zones, arrows, circles, text). The logic is in analysis.js (tested).
-import {PITCH, normalize, withSpeeds, lastSpeeds, fromMetrica, frameAt, dominance, teamBorder, control, detectPasses, passNetwork, tagToPass, defensiveLine, attackDirections, clockOf, clockToS, offsideLine, teamShape, teamNetwork, playerStats, coordinatesCsv, homography, invert3, project, hom, clipToFront, assignTrack, expectedPlayers, teamProfile} from './analysis.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {complete} from './prediction.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {displayAt, keyMap, predictionsForDisplay} from './display.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {newUnit, toggleMember, unitShape, labelOf, setPlayer, pack, unpack} from './lines.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {prepareSlots, slotsAt, slotLabel, slotOfTrack} from './slots.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {mlModel} from './prediction_ml.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {analystTrackingSha,prepareAnalystContinuity,analystContinuityFrame,analystContinuityStatus,readAnalystResult} from './analyst-continuity.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {frameAtOrBefore} from './analysis.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {markerColor} from './marker-colors.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
-import {createTacticalAnnotationPanel} from './tactical-annotation-ui.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {PITCH, normalize, withSpeeds, lastSpeeds, fromMetrica, frameAt, dominance, teamBorder, control, detectPasses, passNetwork, tagToPass, defensiveLine, attackDirections, clockOf, clockToS, offsideLine, teamShape, teamNetwork, playerStats, coordinatesCsv, homography, invert3, project, hom, clipToFront, assignTrack, expectedPlayers, teamProfile} from './analysis.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {complete} from './prediction.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {displayAt, keyMap, predictionsForDisplay} from './display.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {newUnit, toggleMember, unitShape, labelOf, setPlayer, pack, unpack} from './lines.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {prepareSlots, slotsAt, slotLabel, slotOfTrack} from './slots.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {mlModel} from './prediction_ml.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {analystTrackingSha,prepareAnalystContinuity,analystContinuityFrame,analystContinuityStatus,readAnalystResult} from './analyst-continuity.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {frameAtOrBefore} from './analysis.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {markerColor} from './marker-colors.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
+import {createTacticalAnnotationPanel} from './tactical-annotation-ui.js?v=18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0';
 
 const $ = id => document.getElementById(id);
 const COLORS = ['#3f8fd2', '#e8780f'], DPR = Math.min(2, globalThis.devicePixelRatio || 1);
@@ -149,7 +149,8 @@ function push(rawFrame) {
 
 // ---------- the pitch canvas ----------
 function sizePitch() {
-  const pane = $('pitchPane'), w = Math.max(320, pane.clientWidth - 16), M = 3.5, ratio = (PITCH.L + 2 * M) / (PITCH.W + 2 * M), h = w / ratio;
+  const pane = $('pitchPane'), style = getComputedStyle(pane);
+  const w = Math.max(1, pane.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0)), M = 3.5, ratio = (PITCH.L + 2 * M) / (PITCH.W + 2 * M), h = w / ratio;
   pitchCv.style.width = `${w}px`; pitchCv.style.height = `${h}px`; pitchCv.width = Math.round(w * DPR); pitchCv.height = Math.round(h * DPR);
   const k = w / (PITCH.L + 2 * M);
   map = {affine: true, k, pt: (x, y) => ({x: (x + M) * k, y: (y + M) * k}), inv: (px, py) => ({x: px / k - M, y: py / k - M}), r: m => m * k, w, h};

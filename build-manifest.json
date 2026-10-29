@@ -1,6 +1,6 @@
 {
   "schema": "fos-public-static-allowlist-v1",
-  "build_revision": "3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6",
+  "build_revision": "18dd96d00d69cf23bdf77b9790eb50565ce54c8d205785ffd702f9bd0de500a0",
   "purpose": "Local video playback and imported tracking visualization/annotations; no automatic inference/training",
   "public_data_included": false,
   "video_upload": false,
@@ -69,7 +69,7 @@
       "transformation": "byte-for-byte copy; version internal asset references with the bundle revision",
       "pre_version_sha256": "09eebde3e12d670cc20497e64a71840a1766d2ddd1b96a19de273e131d28d6fc",
       "bytes": 45099,
-      "sha256": "a2266ff2a87aa29b37d67d6f2b83c760a2323efaa13cbe4337980f7e3071229a"
+      "sha256": "bb3050a22079d448dfe0b9c1be2ee68e70795c87852fc31c8447d0701f4043b1"
     },
     "analyst-continuity.js": {
       "source": "analyst-continuity.js",
@@ -77,7 +77,7 @@
       "transformation": "remove server result loader; keep local continuity math; version internal asset references with the bundle revision",
       "pre_version_sha256": "e27ee7cb8382482950014981be6e7f26d6a24842e790b64bf7fe50b713181160",
       "bytes": 3875,
-      "sha256": "0729708b637dc1dfc017bb0edfabc18e60f7a437d92a706fa6f3d473d773be14"
+      "sha256": "f690b4743b58f4b82e7df2326f274752e4f02c5fe3c09df3417c04c608aafeda"
     },
     "analyst-pages.css": {
       "source": "tools/pages_site/analyst-pages.css",
@@ -101,15 +101,15 @@
       "transformation": "CSP/connect-src none; static notices; local navigation; extra stylesheet; version internal asset references with the bundle revision",
       "pre_version_sha256": "dbb3d5ae8f8fbd4d55d8e8a44066e2350fdbb2048134fe11a2a90087e5ee4a7b",
       "bytes": 32513,
-      "sha256": "811d7890823b01ab74def3c95ab8c83b3f54a3a2aef31b0b7078b8e97653480e"
+      "sha256": "2edd1c6cd2fa56b030a5a1e26d117cb33571371d489886e6a42f0c7e76de30a5"
     },
     "analyst.js": {
       "source": "analyst.js",
-      "source_sha256": "c8cf33616fb0082350186a35f4f88ab231ae02f61ce836c5f1d07f12c04f4422",
+      "source_sha256": "8a153f490f3f1e8dc8886c665bd3f4afc12df07859dfa85453d600f1476162ce",
       "transformation": "deny network; remove server discovery/upload/model loading; append local File adapter; version internal asset references with the bundle revision",
-      "pre_version_sha256": "23e1b680e1e899641d2845050c56fbf35b52fdb8a66e7af91f1f68e9b6c8b491",
-      "bytes": 154810,
-      "sha256": "006abf9193bb340ab1a1f7c0a59c924572d93bd397955df4b79eea053eefb1c0"
+      "pre_version_sha256": "65ab71245605ff0d37f78df91cc10adc2c1e7d8b243b9d7a836e3b6934bf80b3",
+      "bytes": 154923,
+      "sha256": "8538184a50caa71d89043184e92647d5053990623398a2a8cc65b41af135b515"
     },
     "ball-display.js": {
       "source": "ball-display.js",
@@ -125,7 +125,7 @@
       "transformation": "byte-for-byte copy; version internal asset references with the bundle revision",
       "pre_version_sha256": "a178ee8e1f9944a46d74f2c850474bfcf07e03f8db26e1bb30330f8d4b82f5ab",
       "bytes": 41942,
-      "sha256": "18e2674249c3851a437164df44001e495d5e2706500bf6b0a83ab5187422af02"
+      "sha256": "aadbcb851a46861031ce07ff061233359cc5b0124d098b445f8a9075b73e125d"
     },
     "dashboard-core.js": {
       "source": "dashboard-core.js",
@@ -133,7 +133,7 @@
       "transformation": "byte-for-byte copy; version internal asset references with the bundle revision",
       "pre_version_sha256": "f35ef81a25de7ab79213eac92f1a9719149f6414ee93667b71ad246dca408349",
       "bytes": 15419,
-      "sha256": "901be2ce46bf6137f99b71097992eb2a1254367f7c4fa8eb30440f703d6a1f18"
+      "sha256": "7308cbf6ba18cdfe17c935272429b0c42dad74f10c61461a49a190a29077605b"
     },
     "display.js": {
       "source": "display.js",
@@ -157,7 +157,7 @@
       "transformation": "byte-for-byte copy; version internal asset references with the bundle revision",
       "pre_version_sha256": "1384b08bf3efdb68433f5737d5bd3ad9adc5b9a6e5d061b3757794dc11b6ff76",
       "bytes": 9642,
-      "sha256": "519c8cbb666933867f8323dc7b9dab96dafd85f4efea4233072e458e93800a5f"
+      "sha256": "d45ad2d46171a209ced7321e00072946219609aa5d5abdc4659316051719baa8"
     },
     "lines.js": {
       "source": "lines.js",
@@ -181,7 +181,7 @@
       "transformation": "byte-for-byte copy; version internal asset references with the bundle revision",
       "pre_version_sha256": "1594c3b109fe32e37123acca0f80774d09c337efe01e198aa08947574ad7a6b2",
       "bytes": 8987,
-      "sha256": "eee4e6d9be53c39235c49c321f4fd34dc6483ee8ac76ae4c909618954bda8a07"
+      "sha256": "9414c629c003efcf69937285436a97afb5b5206287cde4de934dbf774da9479e"
     },
     "pages-app.js": {
       "source": "tools/pages_site/pages-app.js",
@@ -189,7 +189,7 @@
       "transformation": "byte-for-byte copy; version internal asset references with the bundle revision",
       "pre_version_sha256": "3dbc7882cc5c0b29d1612cc564ea8cdd25edf9059af7f15e1e98c1ec941c6727",
       "bytes": 11185,
-      "sha256": "619f5803feebf33426abfe3cd9ff709ec775ea882f66d5fb27af8f0bb3b7b43b"
+      "sha256": "c8dd65bf9b5ccf05efb0d60eaea9ebc114e26a5e9247e87a942e1d56cf0a85fd"
     },
     "pages-core.js": {
       "source": "tools/pages_site/pages-core.js",
@@ -213,7 +213,7 @@
       "transformation": "byte-for-byte copy; version internal asset references with the bundle revision",
       "pre_version_sha256": "72f1ac5b2b4a12f2be026efd36cf918a0f9a99fb4cc6cb1ef7fbaf2f9a32005c",
       "bytes": 12651,
-      "sha256": "33c64bec60cea41f0365c8bc528b0b2373d65e78d05a0abfe63d8d1b29c70c33"
+      "sha256": "c37d2a305e1ff1bf27bdcf7255da6032c1c7a596df2debac87844337c282281b"
     },
     "prediction_ml.js": {
       "source": "prediction_ml.js",
@@ -237,7 +237,7 @@
       "transformation": "static calibration help link; shared annotation behavior unchanged; version internal asset references with the bundle revision",
       "pre_version_sha256": "83b8d05cbde90b3b22f5a4c6fdaa039f342975ea697bed4600bc0d494fcb6570",
       "bytes": 14894,
-      "sha256": "da2241f41e448d685fa3e12343f80ea925e724671390ade8548656c556b9c93d"
+      "sha256": "7d9bda1b976cfc84d2e7c00e8d048ace618947864f7869a61d538addb198e02e"
     },
     "tactical-annotations.css": {
       "source": "tactical-annotations.css",
@@ -261,7 +261,7 @@
       "transformation": "byte-for-byte copy; version internal asset references with the bundle revision",
       "pre_version_sha256": "411b015bed40bbd2561e9a75350ac4a7bf52fda1bba039b6c286696bbbabbd7d",
       "bytes": 31850,
-      "sha256": "de9622910550b21a3fe14897ee650027173b975d01ba6b9b1f5e87afdc7a969c"
+      "sha256": "d297ee5a4d2f16d282e7386690cd4fa1d0eb8ef7f0f93e3bcd69276eb88a3d40"
     }
   },
   "limitations": [
