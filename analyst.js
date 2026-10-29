@@ -1330,7 +1330,7 @@ function pagesSyncRange() {
     $('rangeNote').textContent = `${pagesClock(pagesRange.start)}–${pagesClock(pagesRange.end)} · máximo 30 s; sólo reproducción.`;
     return pagesRange;
   } catch (error) {
-    pagesRange = null; video.pause(); S.playing = false; setPlayUI(false);
+    pagesRange = null; pagesStopPlayback();
     for (const id of ['trkFrom', 'trkTo']) $(id).setAttribute('aria-invalid', 'true');
     $('rangeNote').textContent = error.message;
     return null;
@@ -1340,6 +1340,35 @@ function pagesSetRange(start, end) {
   $('trkFrom').value = pagesClock(start); $('trkTo').value = pagesClock(end);
   return pagesSyncRange();
 }
+function pagesStopPlayback() {
+  if (!video.paused) video.pause();
+  S.playing = false; setPlayUI(false);
+}
+function pagesPosition(time) {
+  video.currentTime = time;
+  if (S.data?.frames.length) {
+    S.t = time - vOffset(); S.i = frameAtOrBefore(S.data, S.t); $('timeline').value = S.i;
+    render(); drawMarkers();
+  }
+}
+function pagesPreparePlayback() {
+  const range = pagesSyncRange();
+  if (!range) return false;
+  const dataEnded = S.data?.frames.length && S.i >= S.data.frames.length - 1 && !S.live && !S.match;
+  const time = video.currentTime;
+  pagesPosition(!Number.isFinite(time) || time < range.start || time >= range.end || dataEnded ? range.start : time);
+  return true;
+}
+function pagesPlay() {
+  if (S.playing || !video.paused) { pagesStopPlayback(); return; }
+  if (!pagesPreparePlayback()) return;
+  video.playbackRate = +$('speed').value;
+  video.play().catch(error => { pagesStopPlayback(); status(`No se pudo reproducir el tramo: ${error.message}`); });
+}
+// Space and the video's click handler look up the shared play binding when
+// invoked; the toolbar button already captured it and must be rebound too.
+play = pagesPlay;
+$('play').onclick = play;
 for (const id of ['trkFrom', 'trkTo']) {
   $(id).addEventListener('input', pagesSyncRange);
   $(id).addEventListener('change', pagesSyncRange);
@@ -1347,8 +1376,14 @@ for (const id of ['trkFrom', 'trkTo']) {
 $('fromHere').onclick = () => pagesSetRange(video.currentTime || 0, Math.min(video.duration, (video.currentTime || 0) + 30));
 $('toHere').onclick = () => pagesSetRange(Math.max(0, (video.currentTime || 0) - 30), video.currentTime || 0);
 video.addEventListener('timeupdate', () => {
-  if (!video.paused && (!pagesRange || video.currentTime >= pagesRange.end)) { video.pause(); S.playing = false; setPlayUI(false); }
+  if (video.paused) return;
+  if (!pagesRange) { pagesStopPlayback(); return; }
+  if (video.currentTime >= pagesRange.end) { pagesPosition(pagesRange.end); pagesStopPlayback(); }
+  else if (video.currentTime < pagesRange.start) pagesPosition(pagesRange.start);
 });
+video.addEventListener('play', () => { if (pagesPreparePlayback()) setPlayUI(true); });
+video.addEventListener('pause', pagesStopPlayback);
+video.addEventListener('ended', pagesStopPlayback);
 function pagesResetSource() {
   video.pause(); S.playing = false; setPlayUI(false); pagesRange = null;
   S.data = null; S.rawTracking = null; S.continuitySession = null; S.continuityBundle = null;

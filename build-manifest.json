@@ -51,7 +51,7 @@
   "sources": {
     "adapter": {
       "path": "tools/pages_site/analyst-pages-adapter.js",
-      "sha256": "cee8ea638696869630dbe0abe0038dcb1f2c037d983aeb26156aefc58209453c"
+      "sha256": "fad3521f3574c8fc8a28f3cbd30f39f3cc16b0e8cda02c03b752c10cc716b429"
     }
   },
   "files": {
@@ -100,8 +100,8 @@
       "source": "analyst.js",
       "source_sha256": "c8cf33616fb0082350186a35f4f88ab231ae02f61ce836c5f1d07f12c04f4422",
       "transformation": "deny network; remove server discovery/upload/model loading; append local File adapter",
-      "bytes": 152541,
-      "sha256": "2914175b722ecda30ab4a5474d2f7a6265016be237769a7eaa0c126da16aee7e"
+      "bytes": 154006,
+      "sha256": "23e1b680e1e899641d2845050c56fbf35b52fdb8a66e7af91f1f68e9b6c8b491"
     },
     "ball-display.js": {
       "source": "ball-display.js",
