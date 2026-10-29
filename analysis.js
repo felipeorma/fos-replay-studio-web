@@ -12,7 +12,7 @@
 //   teamShape(frame, team)       -> centroid, width, depth and hull area
 //   delaunay(points)             -> the triangulation that joins every player with its natural neighbours (no point inside the circle of another triangle)
 //   teamNetwork(frame, team, opts) -> the net of a team: triangles, links with their length, and the pass options of the ball carrier
-import {confirmBallFrames} from './ball-display.js';
+import {confirmBallFrames} from './ball-display.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
 export const PITCH = {L: 105, W: 68};
 
 // ---------- data ----------

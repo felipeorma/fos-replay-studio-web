@@ -1,7 +1,7 @@
 // Retrospective, explicitly reviewed reconstruction of SHORT broadcast cut gaps.
 // A shirt feature is appearance evidence, not a player identity. No association is
 // accepted automatically; IDs, ball, homographies and measured tracking stay intact.
-import { forecast } from './prediction.js';
+import { forecast } from './prediction.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
 
 export const RECONSTRUCTION_VERSION = 1;
 const MAX_GAP = 3, MAX_SPEED = 9, MAX_ACCELERATION = 6, HISTORY = .6;

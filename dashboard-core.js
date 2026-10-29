@@ -1,6 +1,6 @@
 // Dashboard rules shared by the browser and the regression tests.
-import { frameAtOrBefore } from "./analysis.js";
-import { displayAt } from "./display.js";
+import { frameAtOrBefore } from "./analysis.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6";
+import { displayAt } from "./display.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6";
 export const DEFAULT_SETTINGS = {
   version: 1,
   colors: {

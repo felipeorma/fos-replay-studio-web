@@ -1,19 +1,19 @@
-import {playbackRange, cameraLabel, isVideo} from './pages-core.js';
-import {calibrationSummary} from './dashboard-core.js';
+import {playbackRange, cameraLabel, isVideo} from './pages-core.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {calibrationSummary} from './dashboard-core.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
 async function pagesNetworkUnavailable() { throw new Error('Esta web no conecta con el servidor del PC. Importa archivos locales.'); }
 // FOS Analyst: tactical analysis over tracking data, in the browser. Loads the output of the tracker (tools/tracking) or any tracking data of the same shape, optionally with its
 // video, and draws over the pitch (and over the video when the camera is known): the space each team gets to first (Voronoi, or Apollonius with the speeds), the pass network,
 // the defensive line that follows its players, the shape of the team, and the analyst's own drawings (zones, arrows, circles, text). The logic is in analysis.js (tested).
-import {PITCH, normalize, withSpeeds, lastSpeeds, fromMetrica, frameAt, dominance, teamBorder, control, detectPasses, passNetwork, tagToPass, defensiveLine, attackDirections, clockOf, clockToS, offsideLine, teamShape, teamNetwork, playerStats, coordinatesCsv, homography, invert3, project, hom, clipToFront, assignTrack, expectedPlayers, teamProfile} from './analysis.js';
-import {complete} from './prediction.js';
-import {displayAt, keyMap, predictionsForDisplay} from './display.js';
-import {newUnit, toggleMember, unitShape, labelOf, setPlayer, pack, unpack} from './lines.js';
-import {prepareSlots, slotsAt, slotLabel, slotOfTrack} from './slots.js';
-import {mlModel} from './prediction_ml.js';
-import {analystTrackingSha,prepareAnalystContinuity,analystContinuityFrame,analystContinuityStatus,readAnalystResult} from './analyst-continuity.js';
-import {frameAtOrBefore} from './analysis.js';
-import {markerColor} from './marker-colors.js';
-import {createTacticalAnnotationPanel} from './tactical-annotation-ui.js';
+import {PITCH, normalize, withSpeeds, lastSpeeds, fromMetrica, frameAt, dominance, teamBorder, control, detectPasses, passNetwork, tagToPass, defensiveLine, attackDirections, clockOf, clockToS, offsideLine, teamShape, teamNetwork, playerStats, coordinatesCsv, homography, invert3, project, hom, clipToFront, assignTrack, expectedPlayers, teamProfile} from './analysis.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {complete} from './prediction.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {displayAt, keyMap, predictionsForDisplay} from './display.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {newUnit, toggleMember, unitShape, labelOf, setPlayer, pack, unpack} from './lines.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {prepareSlots, slotsAt, slotLabel, slotOfTrack} from './slots.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {mlModel} from './prediction_ml.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {analystTrackingSha,prepareAnalystContinuity,analystContinuityFrame,analystContinuityStatus,readAnalystResult} from './analyst-continuity.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {frameAtOrBefore} from './analysis.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {markerColor} from './marker-colors.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {createTacticalAnnotationPanel} from './tactical-annotation-ui.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
 
 const $ = id => document.getElementById(id);
 const COLORS = ['#3f8fd2', '#e8780f'], DPR = Math.min(2, globalThis.devicePixelRatio || 1);

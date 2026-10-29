@@ -1,6 +1,6 @@
 // Causal short-horizon curves from measured history. Existing forests are optional;
 // this wrapper trains nothing and never creates a player identity or a camera pose.
-import { lsSlope, mlAt, mlModel, TAU as ML_TAU } from './prediction_ml.js';
+import { lsSlope, mlAt, mlModel, TAU as ML_TAU } from './prediction_ml.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
 
 const clampVector = (v, limit) => {
   const length = Math.hypot(v.x, v.y);

@@ -6,7 +6,7 @@
 // Tried and not adopted: also moving a player with the average displacement of his visible teammates, and fitting the three parameters per video. On 4 real clips (half of the
 // tracks to fit, the other half to score) the extra term helped in 1 and the fit did not beat the plain model in 3, so the plain one stays.
 
-import {mlState, mlAt} from './prediction_ml.js';
+import {mlState, mlAt} from './prediction_ml.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
 export const TAU = 1.0;          // seconds: how fast a player's speed fades in the prediction
 export const MAX_SPEED = 9;      // m/s: a faster estimate is tracker noise
 const WINDOW = .6;               // s of track used to estimate the speed

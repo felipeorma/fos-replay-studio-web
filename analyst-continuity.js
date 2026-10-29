@@ -1,8 +1,8 @@
 // Reviewed continuity belongs to the 2D view. Video overlays and measured
 // statistics keep the original observations, ball and camera geometry.
-import {buildReconstruction} from './camera-reconstruction.js';
-import {buildContinuity,continuityAt,continuityFrame} from './tactical-continuity.js';
-import {continuityForDisplay,mergeSettings,reviewedFrame,reconstructionReviewedRoles} from './dashboard-core.js';
+import {buildReconstruction} from './camera-reconstruction.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {buildContinuity,continuityAt,continuityFrame} from './tactical-continuity.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
+import {continuityForDisplay,mergeSettings,reviewedFrame,reconstructionReviewedRoles} from './dashboard-core.js?v=3f8c7c600687d4dca360bcf54437da4cbaa0e7875a3772906779c1fcb094f0c6';
 
 export async function analystTrackingSha(text) {
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
