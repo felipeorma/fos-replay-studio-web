@@ -29,11 +29,13 @@ export function normalize(raw, {fps: fpsOpt} = {}) {
       if (q.source === 'predicho') continue;   // a prediction is not a sighting: it is made again from the real ones
       if (x === null || y === null) continue;
       const id = String(q.track_id ?? q.id);
-      const role = q.rol || undefined;   // who the tracker's roles module says it is (roles.py): jugador, portero, arbitro, juez_linea, calentando, fotografo, recogepelotas, personal, dudoso
+      const role = q.role || q.rol || undefined;   // keep both role spellings and the original evidence for round-trip exports
+      const metadata = Object.fromEntries(['source', 'state', 'estado', 'rol', 'source_track_id'].filter(k => Object.hasOwn(q, k)).map(k => [k, q[k]]));
       const identity = q.identity_segment !== undefined ? {identity_segment:String(q.identity_segment)} : {};
-      if (q.is_referee === true || q.is_referee === 'True' || q.is_referee === 'true') { o.push({id, x, y, ref: true, ...identity, ...(role ? {role} : {})}); continue; }
-      if (team === null || team < 0) { o.push({id, x, y, ref: false, ...identity, ...(role ? {role} : {})}); continue; }   // referees and players without a team are not part of the analysis
-      p.push({id, team, x, y, ...identity, ...(role ? {role} : {})});
+      const player = {id, x, y, ...identity, ...metadata, ...(role ? {role} : {})};
+      if (q.is_referee === true || q.is_referee === 'True' || q.is_referee === 'true') { o.push({...player, team: team ?? -1, ref: true}); continue; }
+      if (team === null || team < 0) { o.push({...player, team: team ?? -1, ref: false}); continue; }   // referees and players without a team are not part of the analysis
+      p.push({...player, team});
     }
     const bx = fr.ball && num(fr.ball.x_m ?? fr.ball.x), by = fr.ball && num(fr.ball.y_m ?? fr.ball.y);
     const footprint = fr.camera_footprint_m;
@@ -59,8 +61,8 @@ export function assignTrack(data, id, team) {
     if (team >= 0) {
       if (k >= 0) { if (fr.p[k].team !== team) { fr.p[k].team = team; n++; } continue; }
       const j = (fr.o || []).findIndex(q => q.id === id && !q.ref);
-      if (j >= 0) { const [q] = fr.o.splice(j, 1); fr.p.push({id: q.id, team, x: q.x, y: q.y}); n++; }
-    } else if (k >= 0) { const [q] = fr.p.splice(k, 1); (fr.o || (fr.o = [])).push({id: q.id, x: q.x, y: q.y, ref: false}); n++; }
+      if (j >= 0) { const [q] = fr.o.splice(j, 1), {ref, ...player} = q; fr.p.push({...player, team}); n++; }
+    } else if (k >= 0) { const [q] = fr.p.splice(k, 1); (fr.o || (fr.o = [])).push({...q, team: -1, ref: false}); n++; }
   }
   return n;
 }
@@ -83,6 +85,7 @@ function withMeta(d) {
 export function fromCsv(text, fps = 25) {
   const lines = text.trim().split(/\r?\n/), head = lines.shift().split(',').map(s => s.trim()), at = k => head.indexOf(k);
   const iF = at('frame'), iT = at('t'), iId = at('track_id'), iTeam = at('team'), iRef = at('is_referee'), iX = at('x_m'), iY = at('y_m'), iSrc = at('source'), iIdentity = at('identity_segment');
+  const metadataColumns = ['source', 'state', 'estado', 'rol', 'role', 'source_track_id'].map(key => [key, at(key)]);
   if ([iF, iId, iX, iY].some(i => i < 0)) throw new Error('el CSV necesita las columnas frame, track_id, x_m, y_m');
   const byFrame = new Map();
   for (const line of lines) {
@@ -90,8 +93,9 @@ export function fromCsv(text, fps = 25) {
     if (iSrc >= 0 && c[iSrc] === 'predicho') continue;   // a prediction is not a sighting: it is made again from the real ones
     if (!byFrame.has(f)) byFrame.set(f, {frame: f, t: iT >= 0 ? Number(c[iT]) : f / fps, players: [], ball: null});
     const fr = byFrame.get(f), x = Number(c[iX]), y = Number(c[iY]);
-    if (c[iId] === 'ball') fr.ball = {x_m: x, y_m: y};
+    if (c[iId] === 'ball') fr.ball = {x_m: x, y_m: y, ...(iSrc >= 0 && c[iSrc] ? {estado: c[iSrc]} : {})};
     else fr.players.push({track_id: c[iId], team: iTeam >= 0 ? Number(c[iTeam]) : 0, is_referee: iRef >= 0 ? c[iRef] : false, x_m: x, y_m: y,
+      ...Object.fromEntries(metadataColumns.filter(([, index]) => index >= 0 && c[index]).map(([key, index]) => [key, c[index]])),
       ...(iIdentity >= 0 && c[iIdentity] ? {identity_segment:c[iIdentity]} : {})});
   }
   return {fps, pitch: [PITCH.L, PITCH.W], frames: [...byFrame.keys()].sort((a, b) => a - b).map(k => byFrame.get(k))};
@@ -395,12 +399,16 @@ const csvText = v => String(v).replace(/[,\r\n"]/g, ' ');   // the tracker's CSV
  * the team's name and where the position comes from (`detectado`: measured in the video, not guessed). `frame` is the number of the frame in the whole video when the data came from a video.
  */
 export function coordinatesCsv(data, {teamName = k => `Equipo ${k ? 'B' : 'A'}`, decimals = 2, predicted = null} = {}) {
-  const f = v => Number.isFinite(v) ? v.toFixed(decimals) : '', rows = ['frame,t,track_id,team,is_referee,x_m,y_m,speed_m_s,team_name,source,horizon_s,identity_segment'];
+  const extra = ['state', 'estado', 'rol', 'role', 'source_track_id'];
+  const f = v => Number.isFinite(v) ? v.toFixed(decimals) : '', rows = ['frame,t,track_id,team,is_referee,x_m,y_m,speed_m_s,team_name,source,horizon_s,identity_segment,' + extra.join(',')];
   data.frames.forEach((fr, i) => {
-    for (const q of fr.p) rows.push([fr.f, fr.t.toFixed(3), csvText(q.id), q.team, 'False', f(q.x), f(q.y), q.s === undefined ? '' : f(q.s), csvText(teamName(q.team)), 'detectado', '',q.identity_segment ?? ''].join(','));
-    if (fr.b) rows.push([fr.f, fr.t.toFixed(3), 'ball', -1, 'False', f(fr.b.x), f(fr.b.y), '', '', fr.b.est || 'detectado', '', ''].join(','));
+    for (const q of [...fr.p, ...(fr.o || [])]) {
+      const source = q.source ?? (q.state !== undefined || q.estado !== undefined ? '' : 'detectado');
+      rows.push([fr.f, fr.t.toFixed(3), csvText(q.id), q.team ?? -1, q.ref ? 'True' : 'False', f(q.x), f(q.y), q.s === undefined ? '' : f(q.s), q.team >= 0 ? csvText(teamName(q.team)) : '', csvText(source), '', csvText(q.identity_segment ?? ''), ...extra.map(k => csvText(q[k] ?? ''))].join(','));
+    }
+    if (fr.b) rows.push([fr.f, fr.t.toFixed(3), 'ball', -1, 'False', f(fr.b.x), f(fr.b.y), '', '', fr.b.est || 'detectado', '', '', ...extra.map(() => '')].join(','));
     // players the video did not show but that a prediction places (prediction.js); `horizon_s` is how far in time the nearest real sighting of him is
-    for (const q of (predicted && predicted.get(i)) || []) rows.push([fr.f, fr.t.toFixed(3), csvText(q.id), q.team, 'False', f(q.x), f(q.y), '', csvText(teamName(q.team)), 'predicho', q.h.toFixed(2), ''].join(','));
+    for (const q of (predicted && predicted.get(i)) || []) rows.push([fr.f, fr.t.toFixed(3), csvText(q.id), q.team, 'False', f(q.x), f(q.y), '', csvText(teamName(q.team)), 'predicho', q.h.toFixed(2), '', ...extra.map(() => '')].join(','));
   });
   return rows.join('\n') + '\n';
 }

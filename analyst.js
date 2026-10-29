@@ -1,4 +1,5 @@
 import {playbackRange, cameraLabel, isVideo} from './pages-core.js';
+import {calibrationSummary} from './dashboard-core.js';
 async function pagesNetworkUnavailable() { throw new Error('Esta web no conecta con el servidor del PC. Importa archivos locales.'); }
 // FOS Analyst: tactical analysis over tracking data, in the browser. Loads the output of the tracker (tools/tracking) or any tracking data of the same shape, optionally with its
 // video, and draws over the pitch (and over the video when the camera is known): the space each team gets to first (Voronoi, or Apollonius with the speeds), the pass network,
@@ -539,6 +540,21 @@ function render() {
 }
 function currentH() {
   if (S.Hmap) {   // a camera that moves: one matrix per video frame; with no data loaded the frame is the one the video is showing
+    if (S.Hmap.imported) {
+      // A numeric-keyed h.json contains measurements for those source frames
+      // only. Effective tracking FPS can be lower than the video's native FPS.
+      const frames = S.data?.frames;
+      if (!frames?.length) return null;
+      const t = video.readyState > 0 ? vnow() - vOffset() : frames[Math.min(S.i, frames.length - 1)].t,
+        i = frameAtOrBefore(S.data, t), anchor = frames[i], next = frames[i + 1] || frames[i - 1];
+      const nativeFps = Number(S.rawTracking?.fps), measuredFps = next && (next.f - anchor.f) / (next.t - anchor.t),
+        fps = Number.isFinite(nativeFps) && nativeFps > 0 ? nativeFps : measuredFps;
+      if (!Number.isFinite(t)) return null;
+      const offset = t - anchor.t;
+      if ((!Number.isFinite(fps) || fps <= 0) && Math.abs(offset) > 1e-7) return null;
+      const f = anchor.f + (Math.abs(offset) <= 1e-7 ? 0 : Math.floor(offset * fps + 1e-7));
+      return S.Hmap.byFrame[f] || null;
+    }
     const f = video.readyState > 0 && S.Hmap.fps ? (S.Hmap.exact?Math.floor(vnow()*S.Hmap.fps+1e-7):Math.round(vnow() * S.Hmap.fps)) : S.data ? S.data.frames[Math.min(S.i, S.data.frames.length - 1)].f : S.Hmap.keys[0], keys = S.Hmap.keys;   // the frame the video is showing: the lines move with the camera whoever plays it
     if(S.Hmap.exact)return S.Hmap.byFrame[f]||null; // no old homography across an uncalibrated TV cut
     if (f < keys[0] || f > keys[keys.length - 1] + 2) return null;   // outside the stretch that was followed: no calibration there
@@ -854,7 +870,10 @@ $('exportCsv').onclick = () => {
 };
 $('exportJson').onclick = () => {
   if (!S.data) { status('Todavía no hay datos de jugadores: analiza un video o abre datos de tracking'); return; }
-  const pr = predicted(), fr = S.data.frames.map((f, i) => ({frame: f.f, t: +f.t.toFixed(3), players: f.p.map(q => ({track_id: q.id, team: q.team, x_m: +q.x.toFixed(2), y_m: +q.y.toFixed(2), speed_m_s: q.s === undefined ? null : +q.s.toFixed(2), source: 'detectado'})).concat(((pr && pr.byFrame.get(i)) || []).map(q => ({track_id: q.id, team: q.team, x_m: +q.x.toFixed(2), y_m: +q.y.toFixed(2), speed_m_s: null, source: 'predicho', horizon_s: +q.h.toFixed(2)}))), ball: f.b ? {x_m: +f.b.x.toFixed(2), y_m: +f.b.y.toFixed(2), estado:f.b.est || 'detectado', ...(Number.isFinite(f.b.conf) ? {conf:f.b.conf} : {}), ...(f.b.trajectory_id !== undefined ? {trajectory_id:f.b.trajectory_id} : {}), ...(f.b.quality_checked ? {quality_checked:true} : {})} : null, ...(f.camera_footprint_m ? {camera_footprint_m:f.camera_footprint_m} : {})}));
+  const originalPlayer = q => ({track_id: q.id, team: q.team ?? -1, is_referee: q.ref === true,
+    x_m: +q.x.toFixed(2), y_m: +q.y.toFixed(2), speed_m_s: q.s === undefined ? null : +q.s.toFixed(2),
+    ...Object.fromEntries(['source', 'state', 'estado', 'rol', 'role', 'identity_segment', 'source_track_id'].filter(k => Object.hasOwn(q, k)).map(k => [k, q[k]]))});
+  const pr = predicted(), fr = S.data.frames.map((f, i) => ({frame: f.f, t: +f.t.toFixed(3), players: [...f.p, ...(f.o || [])].map(originalPlayer).concat(((pr && pr.byFrame.get(i)) || []).map(q => ({track_id: q.id, team: q.team, x_m: +q.x.toFixed(2), y_m: +q.y.toFixed(2), speed_m_s: null, source: 'predicho', horizon_s: +q.h.toFixed(2)}))), ball: f.b ? {x_m: +f.b.x.toFixed(2), y_m: +f.b.y.toFixed(2), estado:f.b.est || 'detectado', ...(Number.isFinite(f.b.conf) ? {conf:f.b.conf} : {}), ...(f.b.trajectory_id !== undefined ? {trajectory_id:f.b.trajectory_id} : {}), ...(f.b.quality_checked ? {quality_checked:true} : {})} : null, ...(f.camera_footprint_m ? {camera_footprint_m:f.camera_footprint_m} : {})}));
   download(`coordenadas_${baseName()}.json`, JSON.stringify({fps: S.data.fps, pitch: [PITCH.L, PITCH.W], teams: S.data.teams, cuts: S.data.cuts || [], frames: fr}), 'application/json'); status('Coordenadas exportadas en JSON');
 };
 $('realClip').onclick = async () => { try { const r = await pagesNetworkUnavailable('fixtures/tracking/aravena-sea-por.json'); setData(await r.json(), 'Clip real · Aravena vs Portugal (tracker, 10 jugadores)'); } catch (e) { status(`No pude abrir el clip: ${e.message}`); } };
@@ -898,7 +917,7 @@ $('fileH').onchange = async e => {
   const f = e.target.files[0]; if (!f) return; const raw = JSON.parse(await f.text());
   try {
     if (raw.image && raw.pitch) { S.H = homography(raw.image, raw.pitch); S.Hmap = null; setCalib({image: raw.image, pitch: raw.pitch}); } else if (Array.isArray(raw) && raw.length === 3) { S.H = raw; S.Hmap = null; }
-    else { const byFrame = {}; for (const [k, v] of Object.entries(raw)) if (/^\d+$/.test(k)) byFrame[+k] = v; const keys = Object.keys(byFrame).map(Number).sort((a, b) => a - b); if (!keys.length) throw new Error('el archivo no tiene matrices'); S.Hmap = {byFrame, keys}; S.H = null; }
+    else { const byFrame = {}; for (const [k, v] of Object.entries(raw)) if (/^\d+$/.test(k)) byFrame[+k] = v; const keys = Object.keys(byFrame).map(Number).sort((a, b) => a - b); if (!keys.length) throw new Error('el archivo no tiene matrices'); S.Hmap = {byFrame, keys, exact: true, imported: true}; S.H = null; }
     $('videoInfo').textContent = `Cámara: ${f.name}`; status('Cámara cargada: las capas se dibujan sobre el video'); render();
   } catch (err) { status(`No pude leer la cámara: ${err.message}`); return false; }
 };
@@ -1268,21 +1287,53 @@ $('trkPath').disabled = true;
 $('empty').querySelector('h1').textContent = 'Video y tracking de tu dispositivo';
 $('empty').querySelector('.hero-card > p').textContent = 'Abre un video local y sus datos de tracking para usar el mapa 2D. Esta web no ejecuta detección ni calibración automática.';
 $('trkSub').textContent = 'Video local; sin subida';
-for (const id of ['trkFrom', 'trkTo']) $(id).addEventListener('input', () => {
-  try { pagesRange = playbackRange($('trkFrom').value, $('trkTo').value, video.duration); } catch { pagesRange = null; }
-  pagesNote();
-});
+function pagesClock(seconds) {
+  const centis = Math.max(0, Math.floor(seconds * 100 + 1e-8));
+  return `${Math.floor(centis / 6000)}:${((centis % 6000) / 100).toFixed(2).padStart(5, '0')}`;
+}
+function pagesSyncRange() {
+  try {
+    pagesRange = playbackRange($('trkFrom').value, $('trkTo').value, video.duration);
+    for (const id of ['trkFrom', 'trkTo']) $(id).setAttribute('aria-invalid', 'false');
+    $('rangeNote').textContent = `${pagesClock(pagesRange.start)}–${pagesClock(pagesRange.end)} · máximo 30 s; sólo reproducción.`;
+    return pagesRange;
+  } catch (error) {
+    pagesRange = null; video.pause(); S.playing = false; setPlayUI(false);
+    for (const id of ['trkFrom', 'trkTo']) $(id).setAttribute('aria-invalid', 'true');
+    $('rangeNote').textContent = error.message;
+    return null;
+  }
+}
+function pagesSetRange(start, end) {
+  $('trkFrom').value = pagesClock(start); $('trkTo').value = pagesClock(end);
+  return pagesSyncRange();
+}
+for (const id of ['trkFrom', 'trkTo']) {
+  $(id).addEventListener('input', pagesSyncRange);
+  $(id).addEventListener('change', pagesSyncRange);
+}
+$('fromHere').onclick = () => pagesSetRange(video.currentTime || 0, Math.min(video.duration, (video.currentTime || 0) + 30));
+$('toHere').onclick = () => pagesSetRange(Math.max(0, (video.currentTime || 0) - 30), video.currentTime || 0);
 video.addEventListener('timeupdate', () => {
-  if (pagesRange && !video.paused && video.currentTime >= pagesRange.end) { video.pause(); S.playing = false; setPlayUI(false); }
+  if (!video.paused && (!pagesRange || video.currentTime >= pagesRange.end)) { video.pause(); S.playing = false; setPlayUI(false); }
 });
-async function pagesOpen({video: file, tracking = [], camera = null, range, type = 'tv'}) {
-  if (!isVideo(file)) throw new Error('Elige un video compatible.');
-  cameraLabel(type);
-  video.pause(); S.playing = false; S.data = null; S.rawTracking = null; S.continuitySession = null; S.continuityBundle = null;
+function pagesResetSource() {
+  video.pause(); S.playing = false; setPlayUI(false); pagesRange = null;
+  S.data = null; S.rawTracking = null; S.continuitySession = null; S.continuityBundle = null;
   S.H = null; S.Hmap = null; S.match = null; S.chunk = null; S.slots = null; S.calib = null; S.camJob = null;
   S.shown = null; S.annotationSource = null; S.annotationRevision = null;
   S.shapes = []; S.units = []; S.names = {}; S.reds = []; S.fixes = {}; S.manual = []; S.lineIds = {0: [], 1: []};
-  $('predOn').checked = false; $('slotsOn').checked = false;
+  S.undo = []; S.redo = []; S.sel = null; S.draft = null; S.passTag = null; S.armed = null;
+  S.nextId = 1; S.i = 0; S.t = 0; S.focus = null; S.hover = null; S.swapped = false;
+  S.loadingChunk = null; S.stale = false; S.blocked = false; S.keptSlots = false; S.cache = {};
+  S.calibOn = false; S.calibPts = []; S.auto = {passes: [], turnovers: [], hasBall: false}; drag = null;
+  $('vOffset').value = 0; $('predOn').checked = false; $('slotsOn').checked = false;
+  setTool('select');
+}
+async function pagesOpen({video: file, tracking = [], camera = null, range, type = 'tv'}) {
+  if (!isVideo(file)) throw new Error('Elige un video compatible.');
+  cameraLabel(type);
+  pagesResetSource();
   if (S.videoURL) URL.revokeObjectURL(S.videoURL);
   S.videoURL = URL.createObjectURL(file); S.videoFile = file; S.videoId = null;
   $('trkName').textContent = file.name;
@@ -1301,20 +1352,23 @@ async function pagesOpen({video: file, tracking = [], camera = null, range, type
   if (camera && await $('fileH').onchange({target: {files: [camera]}}) === false)
     throw new Error('No se pudo leer la cámara. Revisa el archivo de homografías.');
   const valid = playbackRange(String(range?.start ?? 0), String(range?.end ?? Math.min(30, video.duration)), video.duration);
-  pagesRange = valid; $('trkFrom').value = clockOf(valid.start); $('trkTo').value = clockOf(valid.end);
+  pagesSetRange(valid.start, valid.end);
   video.currentTime = valid.start;
   if (S.data) { S.i = frameAtOrBefore(S.data, valid.start - vOffset()); S.t = S.data.frames[S.i].t; $('timeline').value = S.i; }
-  $('videoInfo').textContent = `${cameraLabel(type)} · archivo local · ${S.data ? 'mapa basado en el tracking importado; revisa su calibración' : 'sin tracking: no hay posiciones 2D'}`;
-  pagesNote(); applyView(); render();
-  status(S.data ? 'Tracking importado. Las estimaciones conservan su estado; la calidad depende de los datos.' : 'Video abierto. Para ver jugadores en 2D, importa tracking del mismo video.');
+  const quality = calibrationSummary(S.rawTracking);
+  $('videoInfo').textContent = `${cameraLabel(type)} · archivo local · ${S.data ? quality.title : 'sin tracking: no hay posiciones 2D'}`;
+  applyView(); render();
+  status(S.data ? `Tracking importado. ${quality.detail} Las estimaciones conservan su estado.` : 'Video abierto. Para ver jugadores en 2D, importa tracking del mismo video.');
+  return {hasTracking: !!S.data, calibration: quality};
 }
 globalThis.fosPages = Object.freeze({open: pagesOpen});
 const pagesDirectVideoChange = $('fileVideo').onchange;
 $('fileVideo').onchange = event => {
-  S.data = null; S.H = null; S.Hmap = null; S.match = null; S.slots = null; S.shown = null;
-  S.continuitySession = null; S.continuityBundle = null; S.annotationSource = null; S.annotationRevision = null;
-  S.shapes = []; S.units = []; S.names = {}; S.reds = []; S.fixes = {}; S.manual = []; S.lineIds = {0: [], 1: []};
-  pagesRange = null; pagesDirectVideoChange(event); pagesNote();
+  if (!event.target.files?.length) return;
+  pagesResetSource(); pagesDirectVideoChange(event);
+  const metadata = video.onloadedmetadata;
+  video.onloadedmetadata = () => { metadata?.(); pagesSetRange(0, Math.min(30, video.duration)); };
+  pagesNote();
 };
 globalThis.fosAnalyst.loadMatch = () => Promise.reject(new Error('Los partidos del PC no están publicados en esta web.'));
 globalThis.fosAnalyst.loadResult = () => Promise.reject(new Error('Importa los archivos de tracking desde tu dispositivo.'));

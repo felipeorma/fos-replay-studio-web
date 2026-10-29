@@ -56,6 +56,24 @@ export function timeSeconds(minutes, seconds) {
   return m * 60 + s;
 }
 
+export function calibrationSummary(raw = {}, camera = {}) {
+  raw = raw || {};
+  const total = Array.isArray(raw.frames) ? raw.frames.length : Number(raw.info?.frames) || 0;
+  const calibrated = Number.isInteger(raw.calibrated_frames) && raw.calibrated_frames >= 0
+    ? raw.calibrated_frames : null;
+  const reports = camera.chunks || camera.reports || camera.camera_reports || raw.camera_reports || [];
+  const rows = Array.isArray(reports) ? reports : Object.values(reports);
+  const weak = rows.some(q => /débil|debil|mala|weak|approx/i.test(String(q.quality?.level || q.quality || '')));
+  if (total > 0 && calibrated === 0) return {kind: 'unavailable', total, calibrated,
+    title: 'Sin calibración para generar el 2D', detail: `0 de ${total} cuadros calibrados. El video se analizó, pero no hay coordenadas de cancha confirmadas.`};
+  if (weak) return {kind: 'weak', total, calibrated, title: 'Calibración aproximada · revisar líneas',
+    detail: 'La geometría automática es débil y necesita revisión; no acredita exactitud de distancias.'};
+  if (calibrated !== null && calibrated < total) return {kind: 'partial', total, calibrated,
+    title: 'Calibración parcial · hay planos sin geometría', detail: `${calibrated} de ${total} cuadros con calibración candidata; revisa cada plano.`};
+  return {kind: 'unreviewed', total, calibrated, title: 'Calibración pendiente de revisión',
+    detail: 'Contrasta las líneas con el original. La presencia de una matriz no demuestra precisión.'};
+}
+
 export function validateTimeframe(
   start,
   end,

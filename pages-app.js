@@ -104,13 +104,14 @@ $('setupForm').onsubmit = async event => {
     notice('Abriendo los archivos locales en Analyst…');
     const analyst = await getAnalyst();
     if (revision !== sourceRevision) return;
-    await analyst.open({video, tracking, camera, range, type});
+    const opened = await analyst.open({video, tracking, camera, range, type});
     if (revision !== sourceRevision) return;
     const hasTracking = tracking.length > 0;
+    const unavailable = opened?.calibration?.kind === 'unavailable';
     document.body.dataset.workspace = 'open';
-    $('workspaceNote').textContent = `${cameraLabel(type)} · ${displayTime(range.start)}–${displayTime(range.end)} · ${hasTracking ? 'tracking importado, calidad pendiente de tus datos' : 'video sin detecciones: añade tracking para ver jugadores 2D'}`;
-    notice('Abierto. El video y los datos no se han subido. Guarda o exporta tus anotaciones antes de cerrar.');
-    flow(hasTracking ? 'ready' : 'analyze', hasTracking ? '2D abierto con tracking importado. Revisa su calibración.' : 'Video abierto. Faltan detecciones: analiza con tu PC o importa tracking.');
+    $('workspaceNote').textContent = `${cameraLabel(type)} · ${displayTime(range.start)}–${displayTime(range.end)} · ${unavailable ? 'sin calibración: no hay posiciones 2D confirmadas' : hasTracking ? 'tracking importado, calidad pendiente de tus datos' : 'video sin detecciones: añade tracking para ver jugadores 2D'}`;
+    notice(unavailable ? 'Video abierto, pero falta calibración: este tracking no contiene posiciones 2D. Los archivos siguen en tu dispositivo.' : 'Abierto. El video y los datos no se han subido. Guarda o exporta tus anotaciones antes de cerrar.', unavailable);
+    flow(hasTracking && !unavailable ? 'ready' : 'analyze', unavailable ? opened.calibration.detail : hasTracking ? '2D abierto con tracking importado. Revisa su calibración.' : 'Video abierto. Faltan detecciones: analiza con tu PC o importa tracking.', unavailable);
     $('workspace').scrollIntoView({behavior: 'smooth', block: 'start'});
   } catch (e) { if (revision === sourceRevision) { notice(e.message, true); flow('analyze', e.message, true); $('workspace').hidden = true; document.body.dataset.workspace = 'closed'; } }
   finally { if (revision === sourceRevision) { opening = false; updateRange(); } }
