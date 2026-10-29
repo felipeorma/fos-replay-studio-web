@@ -51,7 +51,7 @@
   "sources": {
     "adapter": {
       "path": "tools/pages_site/analyst-pages-adapter.js",
-      "sha256": "e314e77a2c117af0fcfc01ee4b3b8b61a3fcdc906d3ea0800af78dbdb627325a"
+      "sha256": "cee8ea638696869630dbe0abe0038dcb1f2c037d983aeb26156aefc58209453c"
     }
   },
   "files": {
@@ -77,10 +77,10 @@
     },
     "analyst-pages.css": {
       "source": "tools/pages_site/analyst-pages.css",
-      "source_sha256": "8014314e7416c056e58e92cd1a5d35a95294a8c7feb7c08c4429bf10ecf018ca",
+      "source_sha256": "961b5d1fd68a0fc7dc0ab77ce596793f145d471e336acde8f002c9988b0dec4d",
       "transformation": "byte-for-byte copy",
-      "bytes": 701,
-      "sha256": "8014314e7416c056e58e92cd1a5d35a95294a8c7feb7c08c4429bf10ecf018ca"
+      "bytes": 1234,
+      "sha256": "961b5d1fd68a0fc7dc0ab77ce596793f145d471e336acde8f002c9988b0dec4d"
     },
     "analyst.css": {
       "source": "analyst.css",
@@ -98,10 +98,10 @@
     },
     "analyst.js": {
       "source": "analyst.js",
-      "source_sha256": "0c8d500d0400bd1f315cf16aba10cdf979c4420e718aa05a2e41ddbbdd2c5a47",
+      "source_sha256": "c8cf33616fb0082350186a35f4f88ab231ae02f61ce836c5f1d07f12c04f4422",
       "transformation": "deny network; remove server discovery/upload/model loading; append local File adapter",
-      "bytes": 150289,
-      "sha256": "447cfd03f27de313f4012892e1b61053d160b44735d302d23e36b862734274b7"
+      "bytes": 152541,
+      "sha256": "2914175b722ecda30ab4a5474d2f7a6265016be237769a7eaa0c126da16aee7e"
     },
     "ball-display.js": {
       "source": "ball-display.js",

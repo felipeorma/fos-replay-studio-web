@@ -914,10 +914,42 @@ $('fileVideo').onchange = e => {
   $('videoInfo').textContent = `${f.name}: ${currentH() ? 'cámara lista' : 'sin cámara: calíbrala, o abre la matriz del tracker'}`; video.onloadedmetadata = openVideoPane;
 };
 $('fileH').onchange = async e => {
-  const f = e.target.files[0]; if (!f) return; const raw = JSON.parse(await f.text());
+  const f = e.target.files[0]; if (!f) return;
   try {
-    if (raw.image && raw.pitch) { S.H = homography(raw.image, raw.pitch); S.Hmap = null; setCalib({image: raw.image, pitch: raw.pitch}); } else if (Array.isArray(raw) && raw.length === 3) { S.H = raw; S.Hmap = null; }
-    else { const byFrame = {}; for (const [k, v] of Object.entries(raw)) if (/^\d+$/.test(k)) byFrame[+k] = v; const keys = Object.keys(byFrame).map(Number).sort((a, b) => a - b); if (!keys.length) throw new Error('el archivo no tiene matrices'); S.Hmap = {byFrame, keys, exact: true, imported: true}; S.H = null; }
+    const raw = JSON.parse(await f.text());
+    const validMatrix = matrix => {
+      if (!Array.isArray(matrix) || matrix.length !== 3 || !matrix.every(row => Array.isArray(row) && row.length === 3 && row.every(Number.isFinite))) return false;
+      const inverse = invert3(matrix);
+      return !!inverse && inverse.every(row => row.every(Number.isFinite));
+    };
+    if (raw && typeof raw === 'object' && !Array.isArray(raw) && !Object.keys(raw).length) {
+      // The pipeline writes {} when no source frame could be calibrated. This
+      // is an explicit absence of geometry, not an unreadable camera file.
+      S.H = null; S.Hmap = null; S.calib = null; S.camJob = null; S.camRange = null;
+      S.calibOn = false; S.calibPts = []; S.blocked = false;
+      $('trkCalibState').textContent = 'sin calibración importada';
+      $('trkLinesRow').hidden = true; $('trkFlip').hidden = true; $('trkUseAnyway').hidden = true;
+      $('videoInfo').textContent = `Cámara: ${f.name} · sin calibración`;
+      status('Archivo de cámara vacío: no hay calibración disponible. El video y el tracking se pueden abrir sin capas sobre la imagen.'); render();
+      return true;
+    }
+    if (raw && !Array.isArray(raw) && (Object.hasOwn(raw, 'image') || Object.hasOwn(raw, 'pitch'))) {
+      const points = value => Array.isArray(value) && value.length >= 4 && value.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite));
+      if (!points(raw.image) || !points(raw.pitch) || raw.image.length !== raw.pitch.length) throw new Error('hacen falta al menos 4 pares de puntos válidos');
+      const matrix = homography(raw.image, raw.pitch);
+      if (!validMatrix(matrix)) throw new Error('los puntos no definen una homografía válida');
+      S.H = matrix; S.Hmap = null; setCalib({image: raw.image, pitch: raw.pitch});
+    } else if (Array.isArray(raw)) {
+      if (!validMatrix(raw)) throw new Error('la cámara necesita una matriz 3 × 3 válida');
+      S.H = raw; S.Hmap = null;
+    } else {
+      if (!raw || typeof raw !== 'object') throw new Error('el archivo de cámara debe contener un mapa de matrices por cuadro');
+      const entries = Object.entries(raw);
+      if (entries.some(([key, matrix]) => !/^(0|[1-9]\d*)$/.test(key) || !Number.isSafeInteger(Number(key)) || !validMatrix(matrix)))
+        throw new Error('el mapa de cámara debe contener sólo cuadros y matrices 3 × 3 válidas');
+      const byFrame = Object.fromEntries(entries.map(([key, matrix]) => [Number(key), matrix])), keys = Object.keys(byFrame).map(Number).sort((a, b) => a - b);
+      S.Hmap = {byFrame, keys, exact: true, imported: true}; S.H = null;
+    }
     $('videoInfo').textContent = `Cámara: ${f.name}`; status('Cámara cargada: las capas se dibujan sobre el video'); render();
   } catch (err) { status(`No pude leer la cámara: ${err.message}`); return false; }
 };
@@ -1328,6 +1360,7 @@ function pagesResetSource() {
   S.loadingChunk = null; S.stale = false; S.blocked = false; S.keptSlots = false; S.cache = {};
   S.calibOn = false; S.calibPts = []; S.auto = {passes: [], turnovers: [], hasBall: false}; drag = null;
   $('vOffset').value = 0; $('predOn').checked = false; $('slotsOn').checked = false;
+  $('pitchPane').setAttribute('data-calibration', 'unreviewed');
   setTool('select');
 }
 async function pagesOpen({video: file, tracking = [], camera = null, range, type = 'tv'}) {
@@ -1356,6 +1389,7 @@ async function pagesOpen({video: file, tracking = [], camera = null, range, type
   video.currentTime = valid.start;
   if (S.data) { S.i = frameAtOrBefore(S.data, valid.start - vOffset()); S.t = S.data.frames[S.i].t; $('timeline').value = S.i; }
   const quality = calibrationSummary(S.rawTracking);
+  $('pitchPane').setAttribute('data-calibration', quality.kind);
   $('videoInfo').textContent = `${cameraLabel(type)} · archivo local · ${S.data ? quality.title : 'sin tracking: no hay posiciones 2D'}`;
   applyView(); render();
   status(S.data ? `Tracking importado. ${quality.detail} Las estimaciones conservan su estado.` : 'Video abierto. Para ver jugadores en 2D, importa tracking del mismo video.');
