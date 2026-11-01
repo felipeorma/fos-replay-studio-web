@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FOS Studio</title>
+<meta name="description" content="Del video de TV al mapa 2D: los 22 jugadores sobre la cancha, el espacio que domina cada equipo y las líneas del campo sobre tu video.">
+<link rel="stylesheet" href="studio.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">FOS</span><div><h1>Studio</h1><p>Del video de TV al mapa 2D</p></div></div>
+  <span class="badge" title="La plataforma se construye por etapas: ver PLATAFORMA.md">Etapa 1 · base</span>
+</header>
+
+<main>
+  <section class="clip-head">
+    <div><h2 id="clipTitle">Cargando…</h2><p id="clipSub" class="muted"></p></div>
+    <div class="actions">
+      <button id="btnVideo" class="btn primary" type="button">Elegir video</button>
+      <button id="btnBundle" class="btn" type="button">Abrir paquete</button>
+      <button id="btnSave" class="btn" type="button">Guardar proyecto</button>
+      <button id="btnOpen" class="btn" type="button">Abrir proyecto</button>
+    </div>
+    <input id="videoFile" type="file" accept="video/*" hidden>
+    <input id="bundleFile" type="file" accept=".json,application/json" hidden>
+    <input id="projectFile" type="file" accept=".json,application/json" hidden>
+  </section>
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+
+  <section class="stage">
+    <figure class="panel" id="videoPanel">
+      <span class="chip">VIDEO ORIGINAL</span>
+      <div class="frame" id="videoFrame">
+        <video id="video" playsinline preload="auto"></video>
+        <canvas id="overlay" aria-hidden="true"></canvas>
+        <div id="videoEmpty" class="empty"><strong>Elige tu video</strong><span>Se abre en tu navegador: no se sube a ningún sitio. Sin video, el mapa 2D funciona igual.</span></div>
+      </div>
+    </figure>
+    <figure class="panel">
+      <span class="chip">CANCHA 2D · LOS 22</span>
+      <canvas id="map" aria-label="Cancha 2D con los 22 jugadores"></canvas>
+      <figcaption id="legend" class="legend"></figcaption>
+    </figure>
+  </section>
+
+  <section class="transport" aria-label="Reproducción">
+    <button id="btnPrev" class="icon" type="button" aria-label="Cuadro anterior" title="Cuadro anterior (←)">⏮</button>
+    <button id="btnPlay" class="icon main" type="button" aria-label="Reproducir" title="Reproducir / pausa (espacio)">▶</button>
+    <button id="btnNext" class="icon" type="button" aria-label="Cuadro siguiente" title="Cuadro siguiente (→)">⏭</button>
+    <input id="slider" type="range" min="0" max="1" step="0.001" value="0" aria-label="Posición en el clip">
+    <output id="time" class="time">0.00 / 0.00 s</output>
+    <label class="select">Velocidad
+      <select id="rate"><option value="0.25">0,25×</option><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+    </label>
+    <label class="check"><input id="loop" type="checkbox" checked> Repetir</label>
+  </section>
+
+  <section class="cards">
+    <article class="card">
+      <h3>Tramo analizado</h3>
+      <p class="muted small">Un tramo nuevo dura de 1 a 30 s. Puedes cargar un video más largo y analizar solo esos segundos.</p>
+      <div class="row">
+        <label>Inicio (s) <input id="rangeStart" type="number" min="0" step="0.1" inputmode="decimal"></label>
+        <label>Final (s) <input id="rangeEnd" type="number" min="0" step="0.1" inputmode="decimal"></label>
+      </div>
+      <div class="row">
+        <label>Desfase del video (s) <input id="videoOffset" type="number" min="0" step="0.1" value="0" inputmode="decimal"></label>
+        <span class="muted small" id="rangeInfo"></span>
+      </div>
+      <div class="row">
+        <button id="btnRange" class="btn small" type="button">Aplicar tramo</button>
+        <button id="btnFull" class="btn small" type="button">Todo el clip</button>
+      </div>
+      <p id="rangeMsg" class="msg" role="alert"></p>
+    </article>
+
+    <article class="card">
+      <h3>Capas</h3>
+      <label class="check"><input type="checkbox" data-layer="apolonio"> Espacio (Apolonio)</label>
+      <label class="slider">Peso de la velocidad <input id="gain" type="range" min="0" max="1.5" step="0.05" value="0.9"><output id="gainOut">0,9 · Apolonio</output></label>
+      <label class="check"><input type="checkbox" data-layer="footprint"> Lo que ve la cámara</label>
+      <label class="check"><input type="checkbox" data-layer="estimated"> Marcar los estimados</label>
+      <label class="check"><input type="checkbox" data-layer="ball"> Balón</label>
+      <label class="check"><input type="checkbox" data-layer="referees"> Árbitro y jueces de línea</label>
+      <label class="check"><input type="checkbox" data-layer="fieldLines"> Líneas de la cancha sobre el video</label>
+      <label class="check"><input type="checkbox" data-layer="feetRings"> Aros en los pies sobre el video</label>
+    </article>
+
+    <article class="card">
+      <h3>Espacio en cámara</h3>
+      <div class="bar" aria-hidden="true"><i id="bar0"></i><i id="bar1"></i></div>
+      <div class="bar-l"><span id="pct0"></span><span id="pct1"></span></div>
+      <p class="muted small">Apolonio: gana cada zona quien llega antes, con el peso de su velocidad. Con el peso en 0 es el Voronoi clásico (el más cercano). El porcentaje cuenta solo lo que encuadra la cámara.</p>
+      <h3>Jugador</h3>
+      <div id="player" class="muted small">Toca un jugador en el mapa.</div>
+    </article>
+  </section>
+</main>
+
+<footer>
+  <p><strong>Privacidad.</strong> El video se abre en tu navegador y no se sube. Esta página solo carga las posiciones en metros del paquete de análisis.</p>
+  <p class="muted small"><strong>Próximas etapas:</strong> 2 · reflector sobre un jugador, pausa con texto y texto escrito en el campo, y exportar a MP4 · 3 · poner a mano al jugador que el análisis no detecta · 4 · unir todo el análisis en un solo flujo · 5 · subir un clip y obtener el resultado. Detalle en <code>PLATAFORMA.md</code>.</p>
+</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>

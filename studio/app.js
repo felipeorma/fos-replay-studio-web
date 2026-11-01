@@ -1,0 +1,175 @@
+// FOS Studio · aplicación (etapa 1). Une el video del usuario con el paquete de análisis y el mapa 2D; el tramo y las capas viven en el proyecto.
+import {parseBundle, slotInfo} from './bundle.js';
+import {newProject, setRange, parseProject, serializeProject, MAX_ANALYSIS_SECONDS} from './project.js';
+import {frameAt} from './geometry.js';
+import {createMapRenderer, drawVideoOverlay, tintOf, KEEPER, REF} from './render.js';
+
+const $ = id => document.getElementById(id);
+const S = {bundle: null, project: null, t: 0, playing: false, rate: 1, sel: null, hasVideo: false, videoUrl: null, last: 0, raf: 0};
+const map = createMapRenderer($('map')), video = $('video');
+const fmt = (v, d = 2) => v.toFixed(d), pct = v => `${Math.round(v * 100)}%`, es = v => String(v).replace('.', ',');
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento: no pasa nada */ } },
+};
+
+function say(text, error = false) { const s = $('status'); s.textContent = text; s.classList.toggle('error', error); }
+
+// ---------------------------------------------------------------- carga del paquete y del proyecto
+function loadBundle(bundle) {
+  pause();
+  S.bundle = bundle; S.sel = null;
+  const saved = store.get(`fos-studio:project:${bundle.clip.id}`);
+  let project = null;
+  if (saved) { try { project = parseProject(saved); if (project.clip.frames !== bundle.clip.frames) project = null; } catch (e) { project = null; } }
+  S.project = project || newProject(bundle);
+  $('clipTitle').textContent = bundle.clip.title || bundle.clip.id; $('clipSub').textContent = bundle.clip.subtitle || '';
+  $('videoFrame').style.aspectRatio = `${bundle.clip.width} / ${bundle.clip.height}`;
+  const [t0, t1] = bundle.teams;
+  $('legend').innerHTML = [[t0.color, t0.name], [t1.color, t1.name], [KEEPER, 'portero'], [REF, 'árbitro y jueces de línea']].map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('') + '<span><i class="hollow"></i>estimado (no se ve)</span>';
+  $('bar0').style.background = tintOf(t0.color); $('bar1').style.background = tintOf(t1.color);
+  syncControls(); seek(S.project.range.start);
+}
+
+function syncControls() {
+  const p = S.project, {start, end} = p.range;
+  $('slider').min = start; $('slider').max = end; $('slider').step = 1 / S.bundle.clip.fps;
+  $('rangeStart').value = fmt(start, 1); $('rangeEnd').value = fmt(end, 1); $('videoOffset').value = fmt(p.videoOffset, 1);
+  $('rangeInfo').textContent = `${es(fmt(end - start, 1))} s de ${MAX_ANALYSIS_SECONDS} s como máximo`;
+  document.querySelectorAll('[data-layer]').forEach(c => { c.checked = !!p.layers[c.dataset.layer]; });
+  $('gain').value = p.gain; gainLabel();
+}
+const gainLabel = () => { const g = +$('gain').value; $('gainOut').textContent = g === 0 ? '0 · Voronoi (el más cercano)' : `${es(g.toFixed(2).replace(/0$/, ''))} · Apolonio`; };
+const persist = () => { if (S.project) store.set(`fos-studio:project:${S.bundle.clip.id}`, serializeProject(S.project)); };
+
+// ---------------------------------------------------------------- reproducción
+function seek(t) {
+  const {start, end} = S.project.range;
+  S.t = Math.min(end, Math.max(start, t));
+  if (S.hasVideo) video.currentTime = S.t + S.project.videoOffset;
+  render();
+}
+async function play() {
+  if (S.playing || !S.bundle) return;
+  const {start, end} = S.project.range;
+  if (S.t >= end - 1e-3) seek(start);
+  S.playing = true; S.last = performance.now(); buttons();
+  if (S.hasVideo) { video.playbackRate = S.rate; try { await video.play(); } catch (e) { S.playing = false; buttons(); say('El navegador no dejó reproducir el video: pulsa play otra vez.', true); return; } }
+  S.raf = requestAnimationFrame(tick);
+}
+function pause() { S.playing = false; cancelAnimationFrame(S.raf); if (S.hasVideo) video.pause(); buttons(); }
+function tick(now) {
+  if (!S.playing) return;
+  S.t = S.hasVideo ? video.currentTime - S.project.videoOffset : S.t + (now - S.last) / 1000 * S.rate;
+  S.last = now;
+  const {start, end} = S.project.range;
+  if (S.t >= end) { if ($('loop').checked) { seek(start); } else { seek(end); pause(); return; } }
+  else if (S.t < start - 0.05) seek(start);
+  render();
+  S.raf = requestAnimationFrame(tick);
+}
+function buttons() { const b = $('btnPlay'); b.textContent = S.playing ? '⏸' : '▶'; b.setAttribute('aria-label', S.playing ? 'Pausa' : 'Reproducir'); }
+function step(n) { pause(); const fps = S.bundle.clip.fps; seek((Math.round(S.t * fps) + n) / fps); }
+
+// ---------------------------------------------------------------- dibujo
+function render() {
+  if (!S.bundle) return;
+  const {fps, frames} = S.bundle.clip, f = frameAt(S.t, fps, frames), p = S.project;
+  const opts = {layers: p.layers, gain: p.gain, sel: S.sel};
+  const info = map.draw(S.bundle, f, opts);
+  drawVideoOverlay($('overlay'), S.bundle, f, opts);
+  $('slider').value = S.t;
+  $('time').textContent = `${fmt(S.t - p.range.start)} / ${fmt(p.range.end - p.range.start)} s · cuadro ${f}`;
+  const [t0, t1] = S.bundle.teams;
+  if (info.pct == null) { $('bar0').style.width = '0'; $('bar1').style.width = '0'; $('pct0').textContent = p.layers.apolonio ? 'sin cámara en este cuadro' : 'capa apagada'; $('pct1').textContent = ''; }
+  else { $('bar0').style.width = pct(info.pct); $('bar1').style.width = pct(1 - info.pct); $('pct0').textContent = `${t0.name} ${pct(info.pct)}`; $('pct1').textContent = `${pct(1 - info.pct)} ${t1.name}`; }
+  playerPanel(f);
+}
+function playerPanel(f) {
+  const el = $('player');
+  if (S.sel == null) { el.textContent = 'Toca un jugador en el mapa.'; return; }
+  const [x, y, vis, rad, v] = S.bundle.slots[f][S.sel], {team, keeper, number} = slotInfo(S.sel), name = S.bundle.teams[team].name;
+  el.innerHTML = `<b>${keeper ? 'Portero' : `Jugador ${number}`} · ${name}</b><br>${vis > 0.5 ? 'medido en el video' : `estimado (duda de ±${es(fmt(rad, 1))} m)`}<br>Posición ${es(fmt(x, 1))} m, ${es(fmt(y, 1))} m<br>Velocidad ${es(fmt(v * 3.6, 1))} km/h`;
+}
+
+// ---------------------------------------------------------------- video del usuario
+function loadVideo(file) {
+  if (S.videoUrl) URL.revokeObjectURL(S.videoUrl);
+  pause(); S.hasVideo = false;
+  S.videoUrl = URL.createObjectURL(file); video.src = S.videoUrl;
+  video.onloadedmetadata = () => {
+    S.hasVideo = true; $('videoEmpty').hidden = true;
+    const b = S.bundle.clip, ratio = video.videoWidth / video.videoHeight, want = b.width / b.height, notes = [];
+    if (Math.abs(ratio - want) / want > 0.02) notes.push(`el video tiene otra proporción (${video.videoWidth}×${video.videoHeight}) que el análisis (${b.width}×${b.height}): las capas no calzarán`);
+    if (video.duration + 1e-6 < S.project.videoOffset + b.frames / b.fps - 0.1) notes.push(`el video dura ${es(fmt(video.duration, 1))} s y el análisis necesita ${es(fmt(S.project.videoOffset + b.frames / b.fps, 1))} s: ajusta el desfase`);
+    say(notes.length ? `Video «${file.name}» cargado, pero ${notes.join('; ')}.` : `Video «${file.name}» cargado (no se sube: se abre en tu navegador).`, notes.length > 0);
+    seek(S.project.range.start);
+  };
+  video.onerror = () => { S.hasVideo = false; $('videoEmpty').hidden = false; say('No pude abrir ese video. Prueba con un MP4 (H.264).', true); };
+  video.onseeked = () => { if (!S.playing) { S.t = video.currentTime - S.project.videoOffset; render(); } };
+  video.onended = () => { if (S.playing) { if ($('loop').checked) seek(S.project.range.start), video.play(); else pause(); } };
+}
+
+// ---------------------------------------------------------------- eventos
+$('btnVideo').onclick = () => $('videoFile').click();
+$('videoFile').onchange = e => { const f = e.target.files[0]; if (f && S.bundle) loadVideo(f); e.target.value = ''; };
+$('btnBundle').onclick = () => $('bundleFile').click();
+$('bundleFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { loadBundle(parseBundle(await f.text())); say(`Paquete «${f.name}» abierto.`); } catch (err) { say(err.message, true); }
+};
+$('btnSave').onclick = () => {
+  if (!S.project) return;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([serializeProject(S.project)], {type: 'application/json'})); a.download = `fos-studio-${S.bundle.clip.id}.proyecto.json`; a.click(); URL.revokeObjectURL(a.href);
+  say('Proyecto guardado: tramo, capas y anotaciones (sin el video).');
+};
+$('btnOpen').onclick = () => $('projectFile').click();
+$('projectFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f || !S.bundle) return;
+  try {
+    const p = parseProject(await f.text());
+    if (p.clip.id !== S.bundle.clip.id || p.clip.frames !== S.bundle.clip.frames) throw new Error(`Ese proyecto es de otro clip («${p.clip.id}», ${p.clip.frames} cuadros).`);
+    S.project = p; persist(); syncControls(); seek(p.range.start); say('Proyecto abierto.');
+  } catch (err) { say(err.message, true); }
+};
+$('btnPlay').onclick = () => (S.playing ? pause() : play());
+$('btnPrev').onclick = () => step(-1); $('btnNext').onclick = () => step(1);
+$('slider').oninput = e => { pause(); seek(+e.target.value); };
+$('rate').onchange = e => { S.rate = +e.target.value; if (S.hasVideo) video.playbackRate = S.rate; };
+$('btnRange').onclick = () => {
+  const r = setRange(S.project, parseFloat($('rangeStart').value), parseFloat($('rangeEnd').value)), m = $('rangeMsg');
+  m.textContent = r.ok ? 'Tramo aplicado.' : r.error; m.classList.toggle('ok', r.ok);
+  if (r.ok) { persist(); syncControls(); seek(Math.min(Math.max(S.t, r.range.start), r.range.end)); } else syncControls();
+};
+$('btnFull').onclick = () => {
+  const dur = S.bundle.clip.frames / S.bundle.clip.fps, r = setRange(S.project, 0, Math.min(dur, MAX_ANALYSIS_SECONDS)), m = $('rangeMsg');
+  m.textContent = r.ok ? (dur > MAX_ANALYSIS_SECONDS ? `Se tomaron los primeros ${MAX_ANALYSIS_SECONDS} s.` : 'Tramo: todo el clip.') : r.error; m.classList.toggle('ok', r.ok);
+  persist(); syncControls(); seek(S.project.range.start);
+};
+$('videoOffset').onchange = e => { const v = parseFloat(e.target.value); if (isFinite(v) && v >= 0) { S.project.videoOffset = v; persist(); seek(S.t); } else syncControls(); };
+document.querySelectorAll('[data-layer]').forEach(c => { c.onchange = () => { S.project.layers[c.dataset.layer] = c.checked; persist(); render(); }; });
+$('gain').oninput = e => { S.project.gain = +e.target.value; gainLabel(); persist(); render(); };
+$('map').addEventListener('click', ev => {
+  if (!S.bundle) return;
+  const f = frameAt(S.t, S.bundle.clip.fps, S.bundle.clip.frames), [mx, my] = map.toPitch(ev);
+  let best = null, bd = 3;   // el más cercano a menos de 3 m
+  S.bundle.slots[f].forEach(([x, y], j) => { const d = Math.hypot(x - mx, y - my); if (d < bd) { bd = d; best = j; } });
+  S.sel = best === S.sel ? null : best; render();
+});
+window.addEventListener('keydown', e => {
+  if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== 'checkbox' && document.activeElement.type !== 'range') return;
+  if (e.key === ' ') { e.preventDefault(); S.playing ? pause() : play(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); } else if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+});
+new ResizeObserver(() => render()).observe($('map'));
+
+// ---------------------------------------------------------------- arranque: el clip de demostración (solo posiciones en metros)
+(async () => {
+  try {
+    const res = await fetch('demo/javier-correa.bundle.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    loadBundle(parseBundle(await res.text()));
+    say('Clip de demostración cargado. Elige tu video para ver las capas sobre la imagen, o usa solo el mapa 2D.');
+  } catch (err) { $('clipTitle').textContent = 'Sin clip'; say(`No pude cargar el clip de demostración (${err.message}). Usa «Abrir paquete».`, true); }
+})();
+window.fosStudio = {state: S, seek, play, pause, render};   // para las pruebas en el navegador
