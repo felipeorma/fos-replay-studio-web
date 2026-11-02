@@ -102,3 +102,41 @@ export function pitchLines() {
 
 /** Cuadro (0…n-1) que corresponde a un instante del clip. */
 export const frameAt = (t, fps, n) => Math.min(n - 1, Math.max(0, Math.round(t * fps)));
+
+// ---------------------------------------------------------------- texto «escrito en el campo»
+/** Producto de matrices 3×3 (9 números por filas). */
+export function mul3(a, b) {
+  const o = new Array(9).fill(0);
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) o[i * 3 + j] += a[i * 3 + k] * b[k * 3 + j];
+  return o;
+}
+
+/** De un píxel de la textura del texto (u, v; tw × th px) a metros sobre la cancha: centrado en (x, y), de `size` m de alto y girado `rotation` grados (la v crece hacia abajo = y crece). */
+export function textureToMetres(x, y, size, rotation, tw, th) {
+  const s = size / th, r = rotation * Math.PI / 180, c = Math.cos(r), n = Math.sin(r), cu = tw / 2, cv = th / 2;
+  return [s * c, -s * n, x - s * (cu * c - cv * n), s * n, s * c, y - s * (cu * n + cv * c), 0, 0, 1];
+}
+
+/** Homografía de la textura a píxeles CSS del cuadro de video (cw × ch) con la inversa Hinv de la homografía de ese cuadro (vw × vh = tamaño del análisis). null si el texto cae detrás de la cámara. */
+export function textHomography(Hinv, wSign, text, tw, th, vw, vh, cw, ch) {
+  const A = textureToMetres(text.x, text.y, text.size, text.rotation, tw, th);
+  for (const [u, v] of [[0, 0], [tw, 0], [tw, th], [0, th]]) {   // las cuatro esquinas deben estar delante de la cámara
+    const mx = A[0] * u + A[1] * v + A[2], my = A[3] * u + A[4] * v + A[5];
+    if (!toImage(Hinv, mx, my, wSign)) return null;
+  }
+  return mul3([cw / vw, 0, 0, 0, ch / vh, 0, 0, 0, 1], mul3(Hinv, A));
+}
+
+/** Una homografía 3×3 como `matrix3d` de CSS (por columnas; el navegador hace la perspectiva). */
+export function cssMatrix3d(M) {
+  const n = M[8] || 1, h = M.map(v => v / n);
+  return `matrix3d(${[h[0], h[3], 0, h[6], h[1], h[4], 0, h[7], 0, 0, 1, 0, h[2], h[5], 0, 1].map(v => +v.toPrecision(10)).join(',')})`;
+}
+
+// ---------------------------------------------------------------- líneas de jugadores
+/** Una línea (defensa, medio, delantera): los jugadores ordenados de banda a banda, la distancia media a su propio arco y el ancho. attack = hacia dónde ataca el equipo (+1: hacia x = 105). */
+export function lineMetrics(points, attack) {
+  const pts = [...points].sort((a, b) => a[1] - b[1]);
+  const own = p => (attack > 0 ? p[0] : L - p[0]);
+  return {points: pts, depth: pts.reduce((s, p) => s + own(p), 0) / pts.length, width: pts[pts.length - 1][1] - pts[0][1]};
+}

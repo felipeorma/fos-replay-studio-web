@@ -1,6 +1,6 @@
 // FOS Studio · dibujo. El mapa 2D (cancha, los 22, Apolonio, huella de la cámara) y las capas sobre el video (líneas de la cancha, aros en los pies).
 import {dominance, teamBorder} from './analysis.js';
-import {L, W, footprint, pointInPolygon, pitchLines, invert3, toImage, wSignOf} from './geometry.js';
+import {L, W, footprint, pointInPolygon, pitchLines, invert3, toImage, wSignOf, textHomography, cssMatrix3d, lineMetrics} from './geometry.js';
 
 export const KEEPER = '#4FC3FF', REF = '#FF4FA8', INK = '#0a0e0c', LIME = '#C8F169', LINE_RED = '#FF4040';
 
@@ -20,6 +20,99 @@ function pitchBackdrop(w, h) {
   g.fillStyle = '#ecf4ee';
   for (const [x, y] of [[L / 2, W / 2], [11, W / 2], [L - 11, W / 2]]) { g.beginPath(); g.arc(x * k, y * k, 0.35 * k, 0, 7); g.fill(); }
   return c;
+}
+
+
+const FONT = '800 64px Inter, system-ui, -apple-system, "Segoe UI", sans-serif', TEXT_H = 80;   // la textura del texto: 64 px de letra en una caja de 80 px de alto
+
+/** Ancho (px) de la caja de un texto en la textura: lo que mide más un margen. */
+let measureCtx = null;
+export function textureSize(text) {
+  measureCtx = measureCtx || document.createElement('canvas').getContext('2d');
+  measureCtx.font = FONT;
+  return [Math.ceil(measureCtx.measureText(text).width) + 24, TEXT_H];
+}
+
+/** Anotaciones sobre el mapa 2D: líneas de jugadores (con su distancia al arco y su ancho), reflector (aro, halo y estela) y texto escrito en la cancha. */
+function drawMapAnnotations(ctx, bundle, f, o, k, w) {
+  const anns = o.annotations || [], slots = bundle.slots[f];
+  for (const a of anns.filter(a => a.type === 'line')) {
+    const pts = a.slots.map(j => [slots[j][0], slots[j][1]]), m = lineMetrics(pts, bundle.teams[a.team].attack);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (const pass of [[Math.max(6, 0.9 * k), 'rgba(10,14,12,.55)'], [Math.max(3.5, 0.5 * k), a.color]]) {
+      ctx.lineWidth = pass[0]; ctx.strokeStyle = pass[1]; ctx.beginPath(); m.points.forEach(([x, y], i) => (i ? ctx.lineTo(x * k, y * k) : ctx.moveTo(x * k, y * k))); ctx.stroke();
+    }
+    const mid = m.points[Math.floor(m.points.length / 2)], label = `${a.name} · ${m.depth.toFixed(1).replace('.', ',')} m del arco · ancho ${Math.round(m.width)} m`;
+    ctx.font = `700 ${Math.max(12, 0.017 * w)}px Inter, system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(label).width + 16, ly = Math.max(14, mid[1] * k - 2.6 * k);
+    ctx.fillStyle = 'rgba(10,14,12,.78)'; ctx.beginPath(); ctx.roundRect(mid[0] * k - tw / 2, ly - 11, tw, 22, 11); ctx.fill();
+    ctx.fillStyle = a.color; ctx.fillText(label, mid[0] * k, ly + 1);
+  }
+  for (const a of anns.filter(a => a.type === 'spotlight')) {
+    const [x, y, vis] = slots[a.slot], fps = bundle.clip.fps;
+    ctx.beginPath(); for (let g = Math.max(0, f - Math.round(2 * fps)); g <= f; g++) { const q = bundle.slots[g][a.slot]; g === Math.max(0, f - Math.round(2 * fps)) ? ctx.moveTo(q[0] * k, q[1] * k) : ctx.lineTo(q[0] * k, q[1] * k); }
+    ctx.strokeStyle = rgba(a.color, 0.5); ctx.lineWidth = Math.max(2, 0.3 * k); ctx.lineJoin = 'round'; ctx.stroke();
+    const halo = ctx.createRadialGradient(x * k, y * k, 1.2 * k, x * k, y * k, 5.5 * k);
+    halo.addColorStop(0, rgba(a.color, 0.34)); halo.addColorStop(1, rgba(a.color, 0)); ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(x * k, y * k, 5.5 * k, 0, 7); ctx.fill();
+    ctx.setLineDash(vis > 0.5 ? [] : [0.9 * k, 0.7 * k]);   // un jugador estimado se marca con trazo cortado: no se ve en el video
+    ctx.strokeStyle = a.color; ctx.lineWidth = Math.max(3, 0.4 * k); ctx.beginPath(); ctx.arc(x * k, y * k, 2.4 * k, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+  }
+  for (const a of anns.filter(a => a.type === 'pitchText')) {
+    ctx.save(); ctx.translate(a.x * k, a.y * k); ctx.rotate(a.rotation * Math.PI / 180);
+    ctx.font = `800 ${a.size * k * 0.8}px Inter, system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(2, 0.12 * a.size * k); ctx.strokeStyle = 'rgba(10,14,12,.45)'; ctx.strokeText(a.text, 0, 0);
+    ctx.fillStyle = rgba(a.color, 0.92); ctx.fillText(a.text, 0, 0); ctx.restore();
+  }
+  for (const j of o.picking || []) {   // jugadores que se están eligiendo para una línea
+    const [x, y] = slots[j]; ctx.beginPath(); ctx.arc(x * k, y * k, 1.15 * k + 0.045 * w, 0, 7); ctx.strokeStyle = LIME; ctx.lineWidth = Math.max(3, 0.4 * k); ctx.setLineDash([0.6 * k, 0.5 * k]); ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+
+/** Reflector sobre el video: se oscurece todo menos un óvalo (el círculo del suelo, en perspectiva) alrededor de cada jugador elegido, y un aro en el suelo. */
+function drawSpotlightsOnVideo(g, cw, ch, P, spots, slots) {
+  const ring = (x, y, r, n = 40) => { const pts = []; for (let i = 0; i < n; i++) { const p = P(x + r * Math.cos(i / n * 2 * Math.PI), y + r * Math.sin(i / n * 2 * Math.PI)); if (!p) return null; pts.push(p); } return pts; };
+  const poly = pts => { g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); };
+  const live = spots.filter(a => slots[a.slot][2] > 0.5);   // solo si el jugador se ve en el video
+  if (!live.length) return;
+  g.fillStyle = 'rgba(4,8,6,.58)'; g.fillRect(0, 0, cw, ch);
+  g.save(); g.globalCompositeOperation = 'destination-out'; if ('filter' in g) g.filter = 'blur(14px)'; g.fillStyle = '#000';
+  for (const a of live) { const pts = ring(slots[a.slot][0], slots[a.slot][1], 4.6); if (pts) { poly(pts); g.fill(); } }
+  g.restore();
+  for (const a of live) {
+    const [x, y] = slots[a.slot];
+    for (const [r, wd, al] of [[1.7, 5, 1], [2.5, 2.5, 0.55]]) { const pts = ring(x, y, r); if (!pts) continue; poly(pts); g.lineWidth = wd + 3; g.strokeStyle = 'rgba(10,14,12,.6)'; g.stroke(); g.lineWidth = wd; g.strokeStyle = rgba(a.color, al); g.stroke(); }
+  }
+}
+
+/** Líneas de jugadores sobre el video, pegadas al suelo. */
+function drawLinesOnVideo(g, P, lines, slots) {
+  for (const a of lines) {
+    const pts = a.slots.map(j => [slots[j][0], slots[j][1]]).sort((p, q) => p[1] - q[1]).map(([x, y]) => P(x, y));
+    if (pts.some(p => !p)) continue;
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    for (const [wd, col] of [[8, 'rgba(10,14,12,.6)'], [4.5, a.color]]) { g.lineWidth = wd; g.strokeStyle = col; g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.stroke(); }
+    for (const p of pts) { g.beginPath(); g.arc(p[0], p[1], 5, 0, 7); g.fillStyle = a.color; g.fill(); g.lineWidth = 2; g.strokeStyle = INK; g.stroke(); }
+  }
+}
+
+/** Los textos escritos en la cancha, como elementos HTML con la perspectiva del cuadro (matrix3d): crea, mueve y quita los de `layer`. */
+export function syncPitchTexts(layer, bundle, f, anns, cw, ch) {
+  const H = bundle.H[f], Hinv = H && invert3(H), want = new Map();
+  if (Hinv) {
+    const sign = wSignOf(H, Hinv, bundle.clip.width, bundle.clip.height);
+    for (const a of anns.filter(a => a.type === 'pitchText')) {
+      const [tw, th] = textureSize(a.text), M = textHomography(Hinv, sign, a, tw, th, bundle.clip.width, bundle.clip.height, cw, ch);
+      if (M) want.set(a.id, {a, M, tw, th});
+    }
+  }
+  for (const el of [...layer.children]) if (!want.has(el.dataset.id)) el.remove();
+  for (const [id, {a, M, tw, th}] of want) {
+    let el = [...layer.children].find(e => e.dataset.id === id);
+    if (!el) { el = document.createElement('div'); el.className = 'pitch-text'; el.dataset.id = id; layer.appendChild(el); }
+    if (el.textContent !== a.text) el.textContent = a.text;
+    el.style.width = `${tw}px`; el.style.height = `${th}px`; el.style.color = a.color; el.style.transform = cssMatrix3d(M);
+  }
+  return want.size;
 }
 
 export function createMapRenderer(canvas) {
@@ -88,6 +181,7 @@ export function createMapRenderer(canvas) {
       const b = bundle.ball[f];
       if (b) { ctx.beginPath(); ctx.arc(b[0] * k, b[1] * k, 0.7 * k + 3, 0, 7); ctx.fillStyle = INK; ctx.fill(); ctx.beginPath(); ctx.arc(b[0] * k, b[1] * k, 0.7 * k, 0, 7); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#F05A3C'; ctx.lineWidth = Math.max(2, 0.3 * k); ctx.stroke(); }
     }
+    drawMapAnnotations(ctx, bundle, f, o, k, w);
     return {pct, footprintArea: fp.length};
   }
 
@@ -107,6 +201,8 @@ export function drawVideoOverlay(canvas, bundle, f, o) {
   if (!Hinv) return false;
   const sign = wSignOf(H, Hinv, bundle.clip.width, bundle.clip.height), sx = cw / bundle.clip.width, sy = ch / bundle.clip.height;
   const P = (x, y) => { const p = toImage(Hinv, x, y, sign); return p && [p[0] * sx, p[1] * sy]; };
+  const anns = o.annotations || [], slotsNow = bundle.slots[f];
+  drawSpotlightsOnVideo(g, cw, ch, P, anns.filter(a => a.type === 'spotlight'), slotsNow);
   if (o.layers.fieldLines) {
     g.lineJoin = 'round'; g.lineCap = 'round';
     for (const pass of [[5, 'rgba(10,14,12,.55)'], [2.6, LINE_RED]]) {
@@ -118,6 +214,7 @@ export function drawVideoOverlay(canvas, bundle, f, o) {
       }
     }
   }
+  drawLinesOnVideo(g, P, anns.filter(a => a.type === 'line'), slotsNow);
   if (o.layers.feetRings) {
     bundle.slots[f].forEach(([x, y, vis], j) => {
       if (vis < 0.5) return;

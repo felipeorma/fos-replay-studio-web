@@ -1,6 +1,6 @@
 {
   "schema": "fos-studio-site/1",
-  "build_revision": "b699bc3a613129ef5166ced662a3e322fff466bfe1bbcf8874c6addfb15d4ea1",
+  "build_revision": "7049ffa2c9d2983d53a0dd38ec1137ed7c0463335652cc1cd44b1effae689f98",
   "files": [
     {
       "path": "analysis.js",
@@ -10,8 +10,8 @@
     },
     {
       "path": "app.js",
-      "size": 12113,
-      "sha256": "5bcf2fdce8432a561762695bc408e56fb15b4fd510c917aaacc0368babaa52e3",
+      "size": 20626,
+      "sha256": "ce745c74dd724cc3d35d97ce8b5247ebaaae3289097a214c4f081b9800b69cb0",
       "source": "studio/app.js"
     },
     {
@@ -34,32 +34,32 @@
     },
     {
       "path": "geometry.js",
-      "size": 5274,
-      "sha256": "0fdb8171ba59b188dcd1e0fcc93384cacd54a1c31af5da7aa572f7f5d7e5ef02",
+      "size": 7692,
+      "sha256": "6cd857f77fca7ff2212ab8f75cd4e9bcf1503501008d1336ef99c48688fe2894",
       "source": "studio/geometry.js"
     },
     {
       "path": "index.html",
-      "size": 6198,
-      "sha256": "f96cf45ecd272f5c7f6922c3660761f9945f19b2547b1613acbc56976d52f3ff",
+      "size": 8857,
+      "sha256": "43888ecac0b4af37ea6fd1ca207b22ada97fe0f2d385c87f9e83cc21c36f6fa0",
       "source": "studio/index.html"
     },
     {
       "path": "project.js",
-      "size": 3340,
-      "sha256": "2d66ff16ea00bb8a58d344e4cae303cd52e7d6b10f242d3b9e4aa385760f0316",
+      "size": 8643,
+      "sha256": "0b598b284cae051ec0538dddfc35f3a89a0f59ac424debae2e6947966a3ad043",
       "source": "studio/project.js"
     },
     {
       "path": "render.js",
-      "size": 9347,
-      "sha256": "45377519e347467a9d1d2bb322a6c02af02ea7962503936642fbeecf3a998840",
+      "size": 16636,
+      "sha256": "ff20b70680401515839fdaa6b195f36af2c7c78387288cc687d9157e4a795bed",
       "source": "studio/render.js"
     },
     {
       "path": "studio.css",
-      "size": 6218,
-      "sha256": "080941a8fcc9db9645de5c597aad6c6995dfc4331bdd1c55325793be3f514a08",
+      "size": 9249,
+      "sha256": "bb772bfd4e6e94d180793887818530840fdd3534ca985e915e8b39ff06175e97",
       "source": "studio/studio.css"
     }
   ],
