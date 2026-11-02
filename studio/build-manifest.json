@@ -1,6 +1,6 @@
 {
   "schema": "fos-studio-site/1",
-  "build_revision": "7049ffa2c9d2983d53a0dd38ec1137ed7c0463335652cc1cd44b1effae689f98",
+  "build_revision": "0c425184900971641b75579892c1c4484ab0962da8af5b376747d9c9382266f6",
   "files": [
     {
       "path": "analysis.js",
@@ -10,8 +10,8 @@
     },
     {
       "path": "app.js",
-      "size": 20626,
-      "sha256": "ce745c74dd724cc3d35d97ce8b5247ebaaae3289097a214c4f081b9800b69cb0",
+      "size": 25050,
+      "sha256": "5417166cee200e654f4d26ca7fcef2bce43ebab43df77f9240d482e3c6c3fb67",
       "source": "studio/app.js"
     },
     {
@@ -33,6 +33,12 @@
       "source": "studio/demo/javier-correa.bundle.json"
     },
     {
+      "path": "engine.js",
+      "size": 6128,
+      "sha256": "8b88531c76a9dccebc691a97f7b9b62fdcbaa963cc01a2d4e7b8f599513aab90",
+      "source": "studio/engine.js"
+    },
+    {
       "path": "geometry.js",
       "size": 7692,
       "sha256": "6cd857f77fca7ff2212ab8f75cd4e9bcf1503501008d1336ef99c48688fe2894",
@@ -40,8 +46,8 @@
     },
     {
       "path": "index.html",
-      "size": 8857,
-      "sha256": "43888ecac0b4af37ea6fd1ca207b22ada97fe0f2d385c87f9e83cc21c36f6fa0",
+      "size": 10658,
+      "sha256": "6064f4487398134477d463a23d10e5eb34733ecc3291c20e83fd9c320ead500c",
       "source": "studio/index.html"
     },
     {
@@ -58,8 +64,8 @@
     },
     {
       "path": "studio.css",
-      "size": 9249,
-      "sha256": "bb772bfd4e6e94d180793887818530840fdd3534ca985e915e8b39ff06175e97",
+      "size": 9632,
+      "sha256": "95b10b4a022642618b8b93d57301495c835fa97be47b8915e0391bf0af6d3e33",
       "source": "studio/studio.css"
     }
   ],

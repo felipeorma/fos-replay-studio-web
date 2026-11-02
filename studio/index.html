@@ -10,7 +10,7 @@
 <body>
 <header class="top">
   <div class="brand"><span class="logo">FOS</span><div><h1>Studio</h1><p>Del video de TV al mapa 2D</p></div></div>
-  <span class="badge" title="La plataforma se construye por etapas: ver PLATAFORMA.md">Etapa 2.1 · anotaciones</span>
+  <span class="badge" title="La plataforma se construye por etapas: ver PLATAFORMA.md">Etapa 2.3 · analizar</span>
 </header>
 
 <main>
@@ -98,6 +98,31 @@
       <div id="player" class="muted small">Toca un jugador en el mapa.</div>
     </article>
 
+
+    <article class="card wide" id="engineCard">
+      <h3>Analizar un video <span class="muted small">· detecta la cancha y los jugadores</span></h3>
+      <p id="engineState" class="muted small">Buscando el motor de análisis…</p>
+      <div class="ann-grid">
+        <div class="ann-tools">
+          <fieldset>
+            <legend>Tramo del video a analizar</legend>
+            <div class="row">
+              <label>Desde (s) <input id="anStart" type="number" min="0" step="0.1" inputmode="decimal" disabled></label>
+              <label>Hasta (s) <input id="anEnd" type="number" min="0" step="0.1" inputmode="decimal" disabled></label>
+              <label>Cámara <select id="anCamera" disabled><option value="tv">TV (la cámara gira)</option><option value="tactical">Táctica (fija)</option></select></label>
+            </div>
+            <div class="row"><button id="btnAnalyze" class="btn primary" type="button" disabled>Analizar este tramo</button><button id="btnCancel" class="btn" type="button" hidden>Cancelar</button></div>
+          </fieldset>
+          <p class="muted small">Primero elige tu video. Se detectan la cancha (líneas y cámara), los jugadores, el árbitro, el balón y las camisetas, y se arma el mapa 2D con los 22. Un tramo nuevo dura de 1 a 30 s y puede tardar varios minutos.</p>
+        </div>
+        <div class="ann-list">
+          <div class="bar" aria-hidden="true"><i id="anBar" style="width:0;background:var(--lime)"></i></div>
+          <p id="anMsg" class="muted small" role="status" aria-live="polite"></p>
+          <p id="anAdvice" class="advice" hidden></p>
+        </div>
+      </div>
+    </article>
+
     <article class="card wide" id="annCard">
       <h3>Anotaciones <span class="muted small">· se guardan en el proyecto</span></h3>
       <div class="ann-grid">
@@ -142,8 +167,8 @@
 </main>
 
 <footer>
-  <p><strong>Privacidad.</strong> El video se abre en tu navegador y no se sube. Esta página solo carga las posiciones en metros del paquete de análisis.</p>
-  <p class="muted small"><strong>Próximas etapas:</strong> 2.2 · exportar a MP4 lo que ves aquí · 3 · poner a mano al jugador que el análisis no detecta · 4 · unir todo el análisis en un solo flujo · 5 · subir un clip y obtener el resultado. Detalle en <code>PLATAFORMA.md</code>.</p>
+  <p><strong>Privacidad.</strong> El video se abre en tu navegador. Solo se envía a tu propio PC (el motor local) si pulsas «Analizar» desde un servidor de tu computador; en la página publicada no se envía a ningún sitio. Esta página solo carga las posiciones en metros del paquete de análisis.</p>
+  <p class="muted small"><strong>Próximas etapas:</strong> 2.2 · exportar a MP4 lo que ves aquí · 3 · poner a mano al jugador que el análisis no detecta · 4 · unir todo el análisis en un solo flujo · 5 · analizar un partido largo por tramos. Detalle en <code>PLATAFORMA.md</code>.</p>
 </footer>
 <script type="module" src="app.js"></script>
 </body>

@@ -1,11 +1,12 @@
 // FOS Studio · aplicación (etapa 1). Une el video del usuario con el paquete de análisis y el mapa 2D; el tramo y las capas viven en el proyecto.
-import {parseBundle, slotInfo} from './bundle.js';
+import {parseBundle, bundleProblems, slotInfo} from './bundle.js';
 import {newProject, setRange, parseProject, serializeProject, MAX_ANALYSIS_SECONDS, addAnnotation, updateAnnotation, removeAnnotation, activeAnnotations, freezesBetween, TEXT_LIMITS} from './project.js';
 import {frameAt} from './geometry.js';
+import {detectEngine, analysisRangeProblems, uploadVideo, startAnalysis, waitForAnalysis, buildBundle, cancelJob, videoUrl, calibrationAdvice} from './engine.js';
 import {createMapRenderer, drawVideoOverlay, syncPitchTexts, tintOf, KEEPER, REF, LIME} from './render.js';
 
 const $ = id => document.getElementById(id);
-const S = {bundle: null, project: null, t: 0, playing: false, rate: 1, sel: null, hasVideo: false, videoUrl: null, last: 0, raf: 0, armed: null, picking: [], freeze: null, consumed: new Set()};
+const S = {bundle: null, project: null, t: 0, playing: false, rate: 1, sel: null, hasVideo: false, videoUrl: null, last: 0, raf: 0, armed: null, picking: [], freeze: null, consumed: new Set(), videoFile: null, fileDuration: 0, engine: null, analysis: null};
 const esc = v => String(v).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const LINE_COLORS = {Defensa: '#C8F169', Mediocampo: '#4FC3FF', Delantera: '#FF8A5B'};
 const map = createMapRenderer($('map')), video = $('video');
@@ -119,21 +120,77 @@ function playerPanel(f) {
 
 // ---------------------------------------------------------------- video del usuario
 function loadVideo(file) {
-  if (S.videoUrl) URL.revokeObjectURL(S.videoUrl);
+  S.videoFile = file; S.fileDuration = 0;
+  attachVideo(URL.createObjectURL(file), `«${file.name}»`, () => {
+    S.fileDuration = video.duration;
+    $('anStart').value = '0'; $('anEnd').value = String(Math.min(S.engine && S.engine.maxSeconds || MAX_ANALYSIS_SECONDS, Math.floor(video.duration * 10) / 10));
+    updateAnalyzeUi();
+  });
+}
+/** Pone un video (un archivo del usuario o el fragmento que devolvió el análisis) en el reproductor. */
+function attachVideo(src, label, onMeta) {
+  if (S.videoUrl && S.videoUrl.startsWith('blob:')) URL.revokeObjectURL(S.videoUrl);
   pause(); S.hasVideo = false;
-  S.videoUrl = URL.createObjectURL(file); video.src = S.videoUrl;
+  S.videoUrl = src; video.src = src;
   video.onloadedmetadata = () => {
     S.hasVideo = true; $('videoEmpty').hidden = true;
     const b = S.bundle.clip, ratio = video.videoWidth / video.videoHeight, want = b.width / b.height, notes = [];
     if (Math.abs(ratio - want) / want > 0.02) notes.push(`el video tiene otra proporción (${video.videoWidth}×${video.videoHeight}) que el análisis (${b.width}×${b.height}): las capas no calzarán`);
     if (video.duration + 1e-6 < S.project.videoOffset + b.frames / b.fps - 0.1) notes.push(`el video dura ${es(fmt(video.duration, 1))} s y el análisis necesita ${es(fmt(S.project.videoOffset + b.frames / b.fps, 1))} s: ajusta el desfase`);
-    say(notes.length ? `Video «${file.name}» cargado, pero ${notes.join('; ')}.` : `Video «${file.name}» cargado (no se sube: se abre en tu navegador).`, notes.length > 0);
+    if (!S.analysis || !S.analysis.running) say(notes.length ? `Video ${label} cargado, pero ${notes.join('; ')}.` : `Video ${label} cargado (se abre en tu navegador).`, notes.length > 0);
+    if (onMeta) onMeta();
     seek(S.project.range.start);
   };
   video.onerror = () => { S.hasVideo = false; $('videoEmpty').hidden = false; say('No pude abrir ese video. Prueba con un MP4 (H.264).', true); };
   video.onseeked = () => { if (!S.playing) { S.t = video.currentTime - S.project.videoOffset; render(); } };
   video.onended = () => { if (S.playing) { if ($('loop').checked) seek(S.project.range.start), video.play(); else pause(); } };
 }
+
+// ---------------------------------------------------------------- analizar con el motor local
+const api = (...a) => fetch(...a);
+const anMsg = (text, error = false) => { const m = $('anMsg'); m.textContent = text; m.style.color = error ? 'var(--danger)' : ''; };
+const anProgress = (p, text) => { if (p != null) $('anBar').style.width = `${Math.round(Math.min(1, Math.max(0, p)) * 100)}%`; if (text) anMsg(text); };
+function updateAnalyzeUi() {
+  const ready = S.engine && S.engine.state === 'ready', running = !!(S.analysis && S.analysis.running), canEdit = ready && !!S.videoFile && !running;
+  for (const id of ['anStart', 'anEnd', 'anCamera']) $(id).disabled = !canEdit;
+  $('btnAnalyze').disabled = !canEdit || !S.fileDuration; $('btnCancel').hidden = !running;
+  const st = $('engineState');
+  if (S.engine) { st.textContent = S.engine.message + (ready && !S.videoFile ? ' Elige tu video para analizarlo.' : ''); st.className = 'small ' + (ready ? 'ready' : S.engine.state === 'remote' ? 'muted' : 'bad'); }
+}
+async function refreshEngine() {
+  S.engine = await detectEngine(api, location);
+  updateAnalyzeUi();
+}
+async function analyze() {
+  if (!S.videoFile || !S.fileDuration || (S.analysis && S.analysis.running)) return;
+  const start = parseFloat($('anStart').value), end = parseFloat($('anEnd').value), problem = analysisRangeProblems(start, end, S.fileDuration, S.engine.maxSeconds);
+  if (problem) { anMsg(problem, true); return; }
+  const ctl = new AbortController();
+  S.analysis = {running: true, ctl, job: null}; $('anAdvice').hidden = true; pause(); updateAnalyzeUi();
+  try {
+    anProgress(0.02, 'Enviando el video a tu PC (puede tardar si el archivo es grande)…');
+    const up = await uploadVideo(S.videoFile, api);
+    anProgress(0.1, 'Empezando el análisis…');
+    const {job} = await startAnalysis({video: up.id, start, end, cameraType: $('anCamera').value}, api);
+    S.analysis.job = job;
+    await waitForAnalysis(job, {fetchFn: api, signal: ctl.signal, onProgress: p => anProgress(0.1 + 0.75 * p.progress, p.message)});
+    anProgress(0.9, 'Armando el mapa 2D con los 22 jugadores…');
+    const bundle = await buildBundle(job, {fetchFn: api, signal: ctl.signal, onProgress: p => anProgress(null, p.message)});
+    const bad = bundleProblems(bundle);
+    if (bad.length) throw new Error('El motor devolvió un paquete que no entiendo: ' + bad[0] + '.');
+    loadBundle(bundle);
+    attachVideo(videoUrl(job), '(fragmento analizado)');
+    anProgress(1, 'Listo: el mapa 2D está arriba. Revisa que las líneas rojas calcen con las del campo.');
+    const advice = calibrationAdvice(bundle.provenance && bundle.provenance.calibration), notes = (bundle.provenance && bundle.provenance.warnings || []).map(w => w.charAt(0).toUpperCase() + w.slice(1) + '.');
+    const box = $('anAdvice'); box.hidden = false; box.className = `advice ${advice.trust}`; box.textContent = [advice.text, ...notes].join(' ');
+    say(`Análisis terminado: calibración ${advice.level}.`, advice.trust === 'bad');
+  } catch (err) {
+    anProgress(0, err.name === 'AbortError' ? 'Análisis cancelado.' : err.message);
+    if (err.name !== 'AbortError') anMsg(err.message, true);
+  } finally { S.analysis.running = false; updateAnalyzeUi(); }
+}
+$('btnAnalyze').onclick = analyze;
+$('btnCancel').onclick = async () => { const a = S.analysis; if (!a) return; a.ctl.abort(); if (a.job) { try { await cancelJob(a.job, api); } catch (e) { /* ya terminó */ } } };
 
 // ---------------------------------------------------------------- eventos
 $('btnVideo').onclick = () => $('videoFile').click();
@@ -211,6 +268,7 @@ function armUi() {
   $('addText').classList.toggle('armed', S.armed === 'text'); $('addText').textContent = S.armed === 'text' ? 'Toca el mapa…' : 'Colocar en el mapa';
   $('txtHint').textContent = S.armed === 'text' ? 'Toca en el mapa donde va el texto.' : '';
   $('lnPick').classList.toggle('armed', S.armed === 'line'); $('lnPick').textContent = S.armed === 'line' ? 'Terminar de elegir' : 'Elegir en el mapa';
+  if (S.armed) $('map').scrollIntoView({block: 'nearest'});   // el formulario está más abajo que el mapa: al armar, se lleva el mapa a la vista para tocarlo
   $('lnMake').disabled = !(S.picking.length >= 2 && S.picking.length <= 6);
   $('lnHint').textContent = S.armed === 'line' ? `Toca los jugadores de ${S.bundle.teams[+$('lnTeam').value].name} (${S.picking.length} elegidos, de 2 a 6).` : S.picking.length ? `${S.picking.length} jugadores elegidos.` : '';
 }
@@ -286,4 +344,5 @@ new ResizeObserver(() => render()).observe($('map'));
     say('Clip de demostración cargado. Elige tu video para ver las capas sobre la imagen, o usa solo el mapa 2D.');
   } catch (err) { $('clipTitle').textContent = 'Sin clip'; say(`No pude cargar el clip de demostración (${err.message}). Usa «Abrir paquete».`, true); }
 })();
+refreshEngine();
 window.fosStudio = {state: S, seek, play, pause, render, addAnnotation: partial => addTimed(partial)};   // para las pruebas en el navegador

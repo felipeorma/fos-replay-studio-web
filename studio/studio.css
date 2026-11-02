@@ -103,3 +103,10 @@ fieldset input[type=color] { width: 44px; height: 38px; padding: 2px; background
 .ann-list .times { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .ann-list .times input { width: 76px; min-height: 32px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; color: var(--text); }
 .mini { min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; font-size: 13px; }
+
+.advice { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); font-size: 14px; }
+.advice.good { border-color: var(--lime); }
+.advice.weak { border-color: #f2c14e; color: #f2c14e; }
+.advice.bad { border-color: var(--danger); color: var(--danger); }
+#engineState.ready { color: var(--lime); }
+#engineState.bad { color: var(--danger); }
